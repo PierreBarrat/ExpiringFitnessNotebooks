@@ -9,7 +9,6 @@
 ```
 using Pkg; 
 Pkg.activate(".") # activates the local environment
-Pkg.resolve() # create the Manifest.toml file
 Pkg.instantiate() # download and precompile all packages
 ```
 
