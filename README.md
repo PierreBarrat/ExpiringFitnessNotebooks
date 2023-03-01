@@ -15,9 +15,9 @@ Pkg.instantiate() # download and precompile all packages
 
   Note that precompilation could take some time, especially `PartialSweepSIR` which depends on `OrdinaryDiffEq`.
 
-- start `Pluto` by typing `using Pluto; Pluto.run()`. Once the Pluto server is ready, use the explorer in the Pluto window to open any notebook. 
+- start `Pluto` by typing `using Pluto; Pluto.run()`. Once the Pluto server is ready, use the explorer in the Pluto window to open any notebook. The first run of each notebook can be quite long. 
 
-*Note*: Some hints about how one uses Pluto can be found [here](https://github.com/fonsp/Pluto.jl), in the [wiki/faq](https://github.com/fonsp/Pluto.jl/wiki) and in the featured notebooks shown on the welcome screen. 
+*Note*: Some hints about how to use Pluto can be found on the [github page](https://github.com/fonsp/Pluto.jl), in the [wiki/faq](https://github.com/fonsp/Pluto.jl/wiki) and in the featured notebooks shown on the welcome screen. 
 
 
 
