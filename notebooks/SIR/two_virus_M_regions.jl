@@ -37,10 +37,16 @@ Two sliders:
 The `C` matrix can be accesssed in `params.C`
 """
 
+# ╔═╡ c79fe879-a32a-4391-8df1-5b9d9eeb75f5
+function log_range(low, high, length)
+	@assert low > 0 && high > low
+	exp.(range(log(low), log(high); length))
+end
+
 # ╔═╡ 287520e8-97a3-485b-9634-fd2db7a2f4e6
 begin
 	local _Ms = @bind M Slider([1,2,3,4,5,10,20], show_value=true, default=2)
-	local c_values = range(0, 1/M, length = 20)
+	local c_values = vcat([0], log_range(1/M*1e-3, 1/M, 10))
 	local _Cs = @bind c Slider(c_values, show_value=true, default = 0.)
 	Ms = md"M = $(_Ms)"
 	Cs = md"c = $(_Cs)"
@@ -158,7 +164,7 @@ p_freq = let
 	f_R2 = PSS.frequency(sol, tvals, 2, 2)
 	f_R = PSS.frequency(sol, tvals, 2)
 
-	lw = 4
+	lw = 2
 
 	p = plot(
 		legend = :bottomright,
@@ -183,7 +189,7 @@ pS = let
 	g = :S
 	
 	tvals = collect(range(sol.tspan..., length=400))
-	lw = 4
+	lw = 2
 	
 	X_wt = map(t -> mean(sol[t, 1:M, 1, g]), tvals)
 	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
@@ -204,7 +210,7 @@ end
 pI = let
 	g = :I
 	tvals = range(sol.tspan..., length=400)
-	lw = 4
+	lw = 2
 	
 	X_wt = map(t -> mean(sol[t, 1:M, 1, g]), tvals)
 	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
@@ -224,6 +230,7 @@ end
 # ╠═4982e04e-6501-11ed-132e-ad3e395233da
 # ╟─db663438-8523-47ac-a783-88ff59a7ab1d
 # ╟─c6c407d9-fea7-4e79-97ff-6acb88f4356d
+# ╠═c79fe879-a32a-4391-8df1-5b9d9eeb75f5
 # ╠═287520e8-97a3-485b-9634-fd2db7a2f4e6
 # ╠═b3f03e99-9550-4b01-bda1-b7f9f6617c7d
 # ╠═b14f025b-e95f-42fb-a321-4d914f6072ba
