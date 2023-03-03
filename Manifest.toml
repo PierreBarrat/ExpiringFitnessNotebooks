@@ -255,9 +255,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
 deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
-git-tree-sha1 = "fb372fc76a20edda014dfc2cdb33f23ef80feda6"
+git-tree-sha1 = "da9e1a9058f8d3eec3a8c9fe4faacfb89180066b"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.85"
+version = "0.25.86"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -934,9 +934,9 @@ version = "1.4.1"
 
 [[deps.OrdinaryDiffEq]]
 deps = ["Adapt", "ArrayInterface", "DataStructures", "DiffEqBase", "DocStringExtensions", "ExponentialUtilities", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "IfElse", "LinearAlgebra", "LinearSolve", "Logging", "LoopVectorization", "MacroTools", "MuladdMacro", "NLsolve", "NonlinearSolve", "Polyester", "PreallocationTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLNLSolve", "SimpleNonlinearSolve", "SnoopPrecompile", "SparseArrays", "SparseDiffTools", "StaticArrayInterface", "StaticArrays", "TruncatedStacktraces", "UnPack"]
-git-tree-sha1 = "5370a27bf89e6ac04517c6b9778295cdb7a411f8"
+git-tree-sha1 = "61d1c15e207939bd591ef81be31293c66f9f1905"
 uuid = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-version = "6.48.0"
+version = "6.48.2"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -963,7 +963,7 @@ version = "2.5.7"
 
 [[deps.PartialSweepSIR]]
 deps = ["Chain", "LinearAlgebra", "OrdinaryDiffEq", "Parameters", "StatsBase"]
-git-tree-sha1 = "c2604761a78d5d32b4a8af6897c788cf1e1fcf9e"
+git-tree-sha1 = "c8e2dbd354f328a4a36b525bf6db0231d9b9b30a"
 repo-rev = "master"
 repo-url = "https://github.com/PierreBarrat/PartialSweepSIR.jl"
 uuid = "93018257-e3a9-44d7-b14d-a6c792d03116"
@@ -1386,9 +1386,9 @@ version = "0.1.6"
 
 [[deps.TruncatedStacktraces]]
 deps = ["InteractiveUtils"]
-git-tree-sha1 = "7cdbe45f0018b7f681a6b63ad1250ee6f2297a87"
+git-tree-sha1 = "47b1c66a0a4f98312e667992fb9cf7611eaf1c97"
 uuid = "781d530d-4396-4725-bb49-402e4bee1e77"
-version = "1.0.0"
+version = "1.0.1"
 
 [[deps.URIs]]
 git-tree-sha1 = "074f993b0ca030848b897beff716d93aca60f06a"
