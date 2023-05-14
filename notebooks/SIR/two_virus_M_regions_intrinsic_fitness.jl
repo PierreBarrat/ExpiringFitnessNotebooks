@@ -70,7 +70,7 @@ end;
 @unpack α, γ, δ = params;
 
 # ╔═╡ c2a159f4-cd25-4525-a270-2b3065a0dc0e
-T = 5/params.γ # simulation time
+T = 10/params.γ # simulation time
 
 # ╔═╡ bd7c5323-1763-411a-9d94-ba25d77ea8d9
 md"### Cross-immunity"
@@ -118,53 +118,81 @@ end
 # ╔═╡ abab9320-5e1f-475b-aa65-09c79f4cc284
 ξ = (ϕ_m - δ/α)/(ϕ_wt - δ/α)
 
+# ╔═╡ 2bf1ad78-0389-445b-8334-c6f9bea86dcf
+md"""
+The co-existence of the two strains depends on 
+- the cross immunity $\epsilon_b$ and $\epsilon_f$;
+- the ratio of growth rates $\xi=(\alpha\phi^m - \delta)/(\alpha\phi^{wt}-\delta)$. If $\xi<1$, the mutant strain has a fitness detriment.  
+"""
+
 # ╔═╡ 8b265670-6152-409a-809a-f68c45203196
 md"""
 ### Co-existence condition: $c=0$
 
-We just compute the average of the local equilibriums:  
+We just compute the average of the local equilibriums. Assuming $\xi < 1$, we have three cases: 
+
+-  $\xi > \epsilon_f$
+
+The mutant invades all regions, and we have the following equilibrium: 
 
 $$\begin{align}
 I^{wt} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{wt} - \delta}{\alpha\phi^{wt}}\left(\frac{M-1}{M}\frac{1-\epsilon_b\xi}{1-\epsilon_b\epsilon_f} + \frac{1}{M}\frac{1-\epsilon_b^1\xi}{1-\epsilon_b^1\epsilon_f^1}\right)\\
 I^{m} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{m} - \delta}{\alpha\phi^{m}}\left(\frac{M-1}{M}\frac{1-\epsilon_f\xi^{-1}}{1-\epsilon_b\epsilon_f} + \frac{1}{M}\frac{1-\epsilon_f^1\xi^{-1}}{1-\epsilon_b^1\epsilon_f^1}\right)\\
 \end{align}$$
 
-If $\epsilon_f^1 < \xi < \epsilon_f < 1$, the mutant will disappear in every region but the first. The first term in the parenthesis above is then $(M-1)/M$ for the wild-type and $0$ for the mutant. 
-There is co-existence as long as the mutant can invade the first region, with the condition 
+-  $\epsilon_f^1 < \xi < \epsilon_f < 1$
 
-$$\xi > \epsilon_f^1.$$ 
+In this case, the mutant can only invade the special region, and is absent from the others: 
+
+$$\begin{align}
+I^{wt} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{wt} - \delta}{\alpha\phi^{wt}}\left(\frac{M-1}{M} + \frac{1}{M}\frac{1-\epsilon_b^1\xi}{1-\epsilon_b^1\epsilon_f^1}\right)\\
+I^{m} &= \frac{1}{M}\frac{\gamma}{\delta}\frac{\alpha\phi^{m} - \delta}{\alpha\phi^{m}}\frac{1-\epsilon_f^1\xi^{-1}}{1-\epsilon_b^1\epsilon_f^1}\\
+\end{align}$$
+
+
+
+-  $\xi < \epsilon_f^1.$
+
+In this case, the mutant cannot even invade the special region and $I_m = 0$.
 
 """
 
 # ╔═╡ 9a14582a-1d87-49d6-8377-6df2a309da2d
 begin
-	I_wt_eq_c0 = γ/δ * (α*ϕ_wt - δ)/(α*ϕ_wt) * (
+	I_eq_wt_c0 = γ/δ * (α*ϕ_wt - δ)/(α*ϕ_wt) * (
 		min(1, max(0, (M-1)/M * (1-b*ξ)/(1-b*f))) +
 		min(1, max(0, 1/M * (1-b_special*ξ)/(1-b_special*f_special)))
 	)
-	I_m_eq_c0 = γ/δ * (α*ϕ_m - δ)/(α*ϕ_m) * (
+	I_eq_m_c0 = γ/δ * (α*ϕ_m - δ)/(α*ϕ_m) * (
 		min(1, max(0, (M-1)/M * (1-f/ξ)/(1-b*f))) +
 		min(1, max(0, 1/M * (1-f_special/ξ)/(1-b_special*f_special)))
 	)
-	freq_eq_c0 = I_m_eq_c0 / (I_m_eq_c0 + I_wt_eq_c0)
+	freq_eq_c0 = I_eq_m_c0 / (I_eq_m_c0 + I_eq_wt_c0)
 end
-
-# ╔═╡ 440cf872-688a-49fb-bd26-1ac3ead6eb77
-ϕ_m_slider
-
-# ╔═╡ cf932171-04d8-43a4-a01a-afab35ef5c39
-I_wt_eq_c0
-
-# ╔═╡ 799d4097-2f31-45f1-ac9a-79be69ca78df
-freq_eq_c0
 
 # ╔═╡ 4643009b-aef8-469d-b25f-35df8b0593a9
 md"""
 ### Co-existence condition: large $c$
 
-We then have one effective region with $\epsilon_f = \langle\epsilon_f^i\rangle$ (and resp. for $\epsilon_b$). The co-existence condition is 
+We then have one effective region with 
+
+$$\langle\epsilon_f\rangle = \frac{1}{M}\sum_i\epsilon_f^i$$ 
+
+(and resp. for $\epsilon_b$). Assuming $\xi < 1$, the co-existence condition is 
 
 $$\xi > \langle \epsilon_f \rangle.$$
+
+We have two cases: 
+
+- $\xi > \langle\epsilon_f\rangle
+
+$$\begin{align}
+I^{wt} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{wt} - \delta}{\alpha\phi^{wt}}\frac{1-\langle\epsilon_b\rangle\xi}{1-\langle\epsilon_b\rangle \langle\epsilon_f\rangle}\\
+I^{m} &= \frac{1}{M}\frac{\gamma}{\delta}\frac{\alpha\phi^{m} - \delta}{\alpha\phi^{m}}\frac{1-\langle\epsilon_f\rangle\xi^{-1}}{1-\langle\epsilon_b\rangle\langle\epsilon_f\rangle}\\
+\end{align}$$
+
+
+
 """
 
 # ╔═╡ 4627e623-9e0b-4af2-92b3-84a0007f8be8
@@ -182,6 +210,9 @@ begin
 
 	freq_eq_clarge = I_eq_m_clarge / (I_eq_m_clarge + I_eq_wt_clarge)
 end
+
+# ╔═╡ 056fdf7a-8d16-4dd5-a8eb-eef280cbdc3b
+md"### Final setup"
 
 # ╔═╡ b7dd719a-118e-4809-84da-609735534835
 md"""
@@ -271,11 +302,37 @@ p_freq = let
 	plot!(tvals, f_R1, label="Region 1", linewidth=lw)
 	plot!(tvals, f_R2, label="Other regions", linewidth=lw)
 	plot!(tvals, f_R, label="Overall", linewidth=lw)
-	hline!(
-		[freq_eq_c0]; 
-		label="c=0", line=(:black, lw+2, 0.3)
-	)
+	hline!([freq_eq_c0]; label="c=0", line=(:black, lw+2, 0.3))
 	hline!([freq_eq_clarge], label="c large", line=(:black, lw+1, .3, :dash))
+	p
+end
+
+# ╔═╡ 95b3a0b8-d6fd-4554-89c3-73106c5db0d9
+ϕ_m_slider
+
+# ╔═╡ 51dfe63a-b66e-4073-a531-dd64835158fe
+Cs
+
+# ╔═╡ 2e5f1f19-d5f2-4e54-8337-49db178b13c9
+pI = let
+	g = :I
+	tvals = range(sol.tspan..., length=400)
+	lw = 2
+	
+	X_wt = map(t -> mean(sol[t, 1:M, 1, g]), tvals)
+	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
+	
+	p = plot(
+		title="Infectious (all regions)", 
+		xlabel="Time",
+		legend=:topright,
+	)
+	plot!(tvals, X_wt, label="w.t.", linewidth = lw)
+	plot!(tvals, X_m, label="Mutant", linewidth = lw)
+
+	hline!([I_eq_m_c0]; label="c=0", line=(:black, lw+2, 0.3))
+	hline!([I_eq_m_clarge]; label="c large", line=(:dash, :black, lw+2, 0.3))
+
 	p
 end
 
@@ -297,26 +354,6 @@ pS = let
 	plot!(tvals, X_wt, label="w.t.", linewidth = lw)
 	plot!(tvals, X_m, label="Mutant", linewidth = lw)
 	hline!([δ/α], line=(lw+2, :black, 0.3), label="")
-
-	p
-end
-
-# ╔═╡ 2e5f1f19-d5f2-4e54-8337-49db178b13c9
-pI = let
-	g = :I
-	tvals = range(sol.tspan..., length=400)
-	lw = 2
-	
-	X_wt = map(t -> mean(sol[t, 1:M, 1, g]), tvals)
-	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
-	
-	p = plot(
-		title="Infectious (all regions)", 
-		xlabel="Time",
-		legend=:topright,
-	)
-	plot!(tvals, X_wt, label="w.t.", linewidth = lw)
-	plot!(tvals, X_m, label="Mutant", linewidth = lw)
 
 	p
 end
@@ -343,14 +380,13 @@ end
 # ╠═f8025972-761d-4354-b688-35edaa639a80
 # ╠═8e392fa9-4f6d-4b32-9c39-8e5c5000beb3
 # ╠═abab9320-5e1f-475b-aa65-09c79f4cc284
+# ╟─2bf1ad78-0389-445b-8334-c6f9bea86dcf
 # ╟─8b265670-6152-409a-809a-f68c45203196
 # ╠═9a14582a-1d87-49d6-8377-6df2a309da2d
-# ╠═440cf872-688a-49fb-bd26-1ac3ead6eb77
-# ╠═cf932171-04d8-43a4-a01a-afab35ef5c39
-# ╠═799d4097-2f31-45f1-ac9a-79be69ca78df
 # ╟─4643009b-aef8-469d-b25f-35df8b0593a9
 # ╠═4627e623-9e0b-4af2-92b3-84a0007f8be8
 # ╠═9b771a1e-f823-4b1c-a694-6e1d2d1fcb66
+# ╟─056fdf7a-8d16-4dd5-a8eb-eef280cbdc3b
 # ╟─b7dd719a-118e-4809-84da-609735534835
 # ╠═a62f2142-7d76-4a15-9566-54115aa98e08
 # ╟─51c77696-d4ae-466e-a19a-cf9278c7d3a5
@@ -364,6 +400,8 @@ end
 # ╠═88b4146d-d8bb-4793-bec2-76a4cbc4e320
 # ╠═d17bc99f-f5cb-49c5-bfe1-e9219b64d19d
 # ╠═af6249a4-1da6-4bff-8914-0b7ae9195e1b
-# ╠═87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
-# ╟─add14358-6d60-47a5-876f-8e0651781c57
+# ╟─87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
+# ╠═95b3a0b8-d6fd-4554-89c3-73106c5db0d9
+# ╠═51dfe63a-b66e-4073-a531-dd64835158fe
 # ╟─2e5f1f19-d5f2-4e54-8337-49db178b13c9
+# ╟─add14358-6d60-47a5-876f-8e0651781c57
