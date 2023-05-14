@@ -20,7 +20,7 @@ begin
 end
 
 # ╔═╡ a55b7fe0-798b-4eca-b795-ee1342721d08
-datdir = "data_trajectories_random_beta.jl/"
+datdir = "data_trajectories_fixed_fitness.jl/"
 
 # ╔═╡ e999242b-87b3-44a6-a264-9f1ffffc6101
 files = open(datdir * "files.json", "r") do io
@@ -29,6 +29,9 @@ end
 
 # ╔═╡ 3cb788b1-ee3c-41c7-9663-72154a925aa3
 fb = FrequencyBin(0.4, 0.05)
+
+# ╔═╡ 71f383a1-8b38-4182-b523-e658774131ea
+Δt = 10
 
 # ╔═╡ f57bc80a-ab12-4911-bf98-3b3eefcb8ead
 md"## Functions"
@@ -52,18 +55,18 @@ end;
 
 # ╔═╡ 7bb49e6c-5ec9-4333-bc94-8c8d867ced84
 dat = begin
-	# dat_all[dat_all.α .== maximum(αvals), :]; # filter interesting part
-	dat_all[dat_all.Δt .== 10, :];
+	# dat_all[dat_all.s .== maximum(svals), :]; # filter interesting part
+	dat_all[dat_all.Δt .== Δt, :];
 end;
 
 # ╔═╡ d92d5654-2550-4c0f-b537-0b702cd2f860
-αvals = dat_all.α |> unique |> sort
+svals = dat_all.s |> unique |> sort
 
 # ╔═╡ b7a4f81a-f630-4b61-a8b2-70440fe9216f
 Δtvals = dat_all.Δt |> unique |> sort
 
 # ╔═╡ 318cdf36-8d40-4d27-961b-d2c4d8ba61b8
-mβvals = dat_all.mβ |> unique |> sort
+ρvals = dat_all.ρ |> unique |> sort
 
 # ╔═╡ 5f687fbd-bbcd-4524-9eff-11f9493112c7
 names(dat)
@@ -105,21 +108,21 @@ function plot_trajectories(trajectories, params, fb)
 	# vline!([params.Ne], line=(:black, :dash), label="Ne=$(params.Ne)")
 	plot!(
 		p,
-		title = "<β> = $(round(params.mβ, sigdigits=2)), α = $(params.α), Δt = $(params.Δt)"
+		title = "s = $(params.s), ρ = $(round(params.ρ, sigdigits=2)), s/ρ = $(round(params.s/params.ρ; sigdigits=2)), Δt = $(params.Δt)"
 	)
 end
 
 # ╔═╡ 46587230-b730-4ff7-be1a-ab186e70e951
 plt_dict = map(eachrow(dat)) do r
-	(r.α, r.mβ) => plot_trajectories(r.trajectories, r, fb)
+	(r.ρ, r.s) => plot_trajectories(r.trajectories, r, fb)
 end |> Dict
 
 # ╔═╡ 235b0068-51b6-458a-8cbd-4ffe82c35083
 p1 = let
 	plot(
-		[plt_dict[α, mβ] for α in αvals for mβ in mβvals]...,
-		layout = grid(length(αvals), length(mβvals)),
-		size = (length(mβvals) * 600, length(αvals) * 600),
+		[plt_dict[ρ, s] for ρ in ρvals for s in svals]...,
+		layout = grid(length(ρvals), length(svals)),
+		size = (length(svals) * 600, length(ρvals) * 600),
 		margin = 10mm,
 		titlefontsize=18,
 		legendfontsize=18,
@@ -147,21 +150,21 @@ function plot_pfix(trajectories, params)
 	plot!([0,1], [0,1], line=(:black, :dash), label="")
 	plot!(
 		p,
-		title = "<β> = $(round(params.mβ, sigdigits=2)), α = $(params.α), Δt = $(params.Δt)"
+		title = "s = $(params.s), ρ = $(round(params.ρ, sigdigits=2)), s/ρ = $(round(params.s/params.ρ; sigdigits=2)), Δt = $(params.Δt)"
 	)
 end
 
 # ╔═╡ 8e892a2e-c51d-405c-aa3a-3036bcf36a2c
 plt_dict_pfix = map(eachrow(dat)) do r
-	(r.α, r.mβ) => plot_pfix(r.trajectories, r)
+	(r.s, r.ρ) => plot_pfix(r.trajectories, r)
 end |> Dict
 
 # ╔═╡ c13f9cca-a534-4ecf-9b7a-0f8d4f825e55
 p2 = let
 	plot(
-		[plt_dict_pfix[α, mβ] for α in αvals for mβ in mβvals]...,
-		layout = grid(length(αvals), length(mβvals)),
-		size = (length(mβvals) * 600, length(αvals) * 600)
+		[plt_dict_pfix[s, ρ] for s in svals for ρ in ρvals]...,
+		layout = grid(length(svals), length(ρvals)),
+		size = (length(ρvals) * 600, length(svals) * 600)
 	)
 end
 
@@ -176,6 +179,7 @@ end
 # ╠═318cdf36-8d40-4d27-961b-d2c4d8ba61b8
 # ╠═3cb788b1-ee3c-41c7-9663-72154a925aa3
 # ╠═46587230-b730-4ff7-be1a-ab186e70e951
+# ╠═71f383a1-8b38-4182-b523-e658774131ea
 # ╠═235b0068-51b6-458a-8cbd-4ffe82c35083
 # ╠═642da2d5-d196-4fcf-936c-a9585a7df465
 # ╠═8e892a2e-c51d-405c-aa3a-3036bcf36a2c

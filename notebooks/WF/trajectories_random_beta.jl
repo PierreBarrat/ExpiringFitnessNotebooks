@@ -67,7 +67,7 @@ For a given $\beta$ and $\rho$, the simulation time should be $\gg 1/\rho/\beta^
 # ╔═╡ afe7bf04-d998-46fc-afed-8e2cd21361d2
 begin
 	mβvals = collect(range(β2, sqrt(β2), length=7))[2:end-1]
-	αvals = [.01, .03, .1]
+	αvals = [.03, .1, .3]
 	Δtvals = [1, 3, 10, 30]
 	md"**Variable parameters**"
 end

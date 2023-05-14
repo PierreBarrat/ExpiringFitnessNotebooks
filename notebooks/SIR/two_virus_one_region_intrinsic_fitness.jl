@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.22
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -154,9 +154,12 @@ begin
 	Rm = α/δ*ϕ_m
 	ξ = (ϕ_m - δ/α)/(ϕ_wt - δ/α)
 
-	I_eq_wt = γ/δ * (Rwt-1)/Rwt * (1 - b*ξ)/(1-b*f)
-	I_eq_m = γ/δ * (Rm-1)/Rm * (1-f/ξ)/(1-b*f)
+	I_eq_wt = γ/δ * (Rwt-1)/Rwt * min(1, max(0, (1 - b*ξ)/(1-b*f)))
+	I_eq_m = γ/δ * (Rm-1)/Rm * min(1, max(0, (1-f/ξ)/(1-b*f)))
 end
+
+# ╔═╡ 6fdb85a0-4124-4aec-a0ee-cc5c90041185
+ξ
 
 # ╔═╡ 21a380ab-de02-4407-8d6c-cafe8a85f5d1
 md"Checking that numerically inverting the matrix and the analytical formula give the same result."
@@ -169,6 +172,12 @@ let
 	@assert isapprox(I_eq_m, state_eq[1, 2, :I])
 	@assert isapprox(I_eq_wt, state_eq[1, 1, :I])
 end
+
+# ╔═╡ a0ed2aa2-a275-4aa6-b3fe-2b0260f9968e
+state_eq[1, 2, :I]
+
+# ╔═╡ 123ac0a0-c55d-44e2-bb8b-8b1643154c21
+I_eq_m
 
 # ╔═╡ 991ea65d-346d-4704-8315-56ed45547e6a
 f_eq = (ξ - f) / (ξ - f + ϕ_m/ϕ_wt - b*ξ*ϕ_m/ϕ_wt)
@@ -254,6 +263,7 @@ end
 # ╠═e7dfd56e-9719-4f9b-a988-e753e118d54f
 # ╠═37a01f00-b8b6-49cc-8ba3-c36593f9fd7d
 # ╠═6dff5b25-43a0-46b7-84bd-8cf438542511
+# ╠═6fdb85a0-4124-4aec-a0ee-cc5c90041185
 # ╟─69171b6c-0d3c-43ed-b52e-1e4da14ae33b
 # ╠═3d1dcb13-ac89-46fd-9466-2f013aaa2935
 # ╠═9bc81dc4-7a27-431f-876c-afaf11b3f54e
@@ -264,10 +274,12 @@ end
 # ╟─21a380ab-de02-4407-8d6c-cafe8a85f5d1
 # ╠═b99267e0-f2ba-4c5c-bae1-b1107b28422a
 # ╠═5d6e82ce-f814-4527-8d88-5c3d53cb0b0d
+# ╠═a0ed2aa2-a275-4aa6-b3fe-2b0260f9968e
+# ╠═123ac0a0-c55d-44e2-bb8b-8b1643154c21
 # ╠═991ea65d-346d-4704-8315-56ed45547e6a
 # ╟─6c558d3a-77be-4124-aa20-767c58510c91
 # ╠═d427794f-675c-4a16-8b31-5f347fca92f8
-# ╟─c4f5530c-4646-4695-9b32-41fc9a36190b
+# ╠═c4f5530c-4646-4695-9b32-41fc9a36190b
 # ╠═f092b2d0-4914-4dc6-ab6a-1b1337d8f36e
 # ╠═193be30d-e9c9-475d-9b7e-8e9007921e6a
 # ╠═743382c9-5bf7-4cef-8afc-7b47b89385f2
