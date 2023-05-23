@@ -86,11 +86,14 @@ end
 md"Cross immunity matrix for other regions $i>1$."
 
 # ╔═╡ 78b03821-37d4-4a9d-8ff0-349e12f66686
-K0 = let
-	b = 1
-	f = 1
+K0 = begin
+	b = .95
+	f = .95
 	[1 b; f 1]
 end
+
+# ╔═╡ 95efa1bd-8fe2-41f1-ba13-839a670cd86e
+
 
 # ╔═╡ b7dd719a-118e-4809-84da-609735534835
 md"""
@@ -156,6 +159,13 @@ Ms
 # ╔═╡ d17bc99f-f5cb-49c5-bfe1-e9219b64d19d
 Cs
 
+# ╔═╡ 8e17f448-7e6c-493c-b099-1f639a56a575
+f_av = let
+	f_av = (M-1)/M * f + f_special/M
+	b_av = (M-1)/M * b + b_special/M
+	(1 - f_av)/(2 - f_av - b_av)
+end
+
 # ╔═╡ 87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
 p_freq = let
 	# freq. plot
@@ -181,6 +191,7 @@ p_freq = let
 		[(1-f_special)/(2-b_special-f_special)]; 
 		label="", line=(:black, lw+2, 0.3)
 	)
+	hline!([f_av], label="", line=(:black))
 	p
 end
 
@@ -241,6 +252,7 @@ end
 # ╠═c4da46f5-8178-4ae5-b865-db025a365da0
 # ╟─81cbea6e-9a97-4e7e-9528-f0830c7ae58f
 # ╠═78b03821-37d4-4a9d-8ff0-349e12f66686
+# ╠═95efa1bd-8fe2-41f1-ba13-839a670cd86e
 # ╟─b7dd719a-118e-4809-84da-609735534835
 # ╠═a62f2142-7d76-4a15-9566-54115aa98e08
 # ╟─51c77696-d4ae-466e-a19a-cf9278c7d3a5
@@ -253,6 +265,7 @@ end
 # ╟─bb4a3499-958f-4b34-b69c-de2874ae8546
 # ╠═88b4146d-d8bb-4793-bec2-76a4cbc4e320
 # ╠═d17bc99f-f5cb-49c5-bfe1-e9219b64d19d
-# ╟─87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
+# ╠═8e17f448-7e6c-493c-b099-1f639a56a575
+# ╠═87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
 # ╟─add14358-6d60-47a5-876f-8e0651781c57
 # ╟─2e5f1f19-d5f2-4e54-8337-49db178b13c9

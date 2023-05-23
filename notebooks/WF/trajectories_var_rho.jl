@@ -45,6 +45,8 @@ begin
 	μ = 0
 	Ne = 100
 	β2 = .1
+	α = .1
+	Δt = 1
 	ρ = 1/Ne/β2
 	md"**Constants**"
 end
@@ -67,15 +69,21 @@ For a given $\beta$ and $\rho$, the simulation time should be $\gg 1/\rho/\beta^
 
 # ╔═╡ afe7bf04-d998-46fc-afed-8e2cd21361d2
 begin
-	mβvals = collect(range(β2, sqrt(β2), length=7))[2:end-1]
-	αvals = [.03, .1, .3]
-	Δtvals = [1, 3, 10, 30]
+	logrange(x, y, l) = exp.(range(log(x), log(y), length=l))
+	# mβvals = collect(range(β2, sqrt(β2), length=7))[2:end-1]
+	mβvals = [.25, .5, .7]
+	β2vals(mβ) = @chain begin
+		range(mβ^2, mβ, length=19)
+		collect
+		[getindex(_, 2), getindex(_, length(_)-1)]
+	end
+	ρvals = [1/100, 1/30, 1/10]# |> collect
 	md"**Variable parameters**"
 end
 
 # ╔═╡ 1110d7fa-9c96-4b40-ae60-2396a08d4db0
-parameters = map(Iterators.product(Δtvals, αvals, mβvals)) do (Δt, α, mβ)
-	(mβ=mβ, α=α, Δt=Δt)
+parameters = map(Iterators.product(ρvals, mβvals)) do (ρ, mβ)
+	map(β2 -> (mβ=mβ, β2 = β2, ρ=ρ), β2vals(mβ))
 end |> (x -> vcat(x...));
 
 # ╔═╡ f77e8aa9-7843-4917-a745-0fa3e6611939
@@ -109,7 +117,7 @@ begin
 	import Base.rand
 	function rand(rng::Distributions.AbstractRNG, x::FitnessDistribution)
 		β = @chain rand(x.β) min(_, .999) max(_, .001) # for the log to be ok
-		return -x.α * log(1-β)
+		return -x.α * log(1-β)/2
 	end
 end
 
@@ -146,11 +154,11 @@ $$1 - e^{-\rho/\alpha} \gg L^{-1/2}$$
 """
 
 # ╔═╡ bbb24ac7-d514-4343-8c07-5f017ce45e0b
-function simulate(mβ, α; Δt = 1)
+function simulate(mβ, β2, ρ; Δt = 1)
 	# setting parameters
 	fitness_distribution = FitnessDistribution(mβ, β2, α)
 
-	T = max(500/ρ, 100 * Ne)
+	T = min(50_000, 500/ρ)
 	
 	switchgen = round(Int, 1/ρ)
 
@@ -174,7 +182,7 @@ function simulate(mβ, α; Δt = 1)
 		fitness_distribution,
 		switchgen, 
 		change_init_field=true, 
-		change_field_time = :random,
+		change_field_time = :periodic,
 		max_freq=0., 
 	)
 
@@ -199,7 +207,7 @@ trajectories, diversity, allele_frequencies, switch_info = let
 	switches = Dict()
 	for (i, p) in enumerate(parameters)
 		@info p i/length(parameters)
-		@time T, d, f, s = simulate(p.mβ, p.α; Δt=p.Δt)
+		@time T, d, f, s = simulate(p.mβ, p.β2, p.ρ; Δt)
 		# trajectories
 		tjs[p] = T
 		# diversity
@@ -227,11 +235,11 @@ end;
 filenames = map(enumerate(collect(keys(trajectories)))) do (idx, p)
 	idx => (
 		Ne = Ne,
-		β2 = β2,
-		ρ = ρ,
+		β2 = p.β2,
+		ρ = p.ρ,
 		mβ = p.mβ,
-		α = p.α,
-		Δt = p.Δt,
+		α = α,
+		Δt = Δt,
 		L=L, 
 		N=N,
 		trajectory_file = "trajectory_$(idx).csv",

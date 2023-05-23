@@ -46,11 +46,15 @@ end
 # ╔═╡ 287520e8-97a3-485b-9634-fd2db7a2f4e6
 begin
 	local _Ms = @bind M Slider([1,2,3,4,5,10,20], show_value=true, default=2)
-	local c_values = vcat([0], log_range(1/M*1e-3, 1/M, 10))
-	local _Cs = @bind c Slider(c_values, show_value=true, default = 0.)
 	Ms = md"M = $(_Ms)"
-	Cs = md"c = $(_Cs)"
 end;
+
+# ╔═╡ 3074735c-5073-4a7d-8cc9-d983cc0268f2
+begin
+		local c_values = vcat([0], log_range(1/M*1e-3, 1/M, 10))
+		local _Cs = @bind c Slider(c_values, show_value=true, default = 1/M)
+		Cs = md"c = $(_Cs)"
+end
 
 # ╔═╡ b3f03e99-9550-4b01-bda1-b7f9f6617c7d
 Ms
@@ -69,8 +73,11 @@ end;
 # ╔═╡ e38f872f-f9ec-45cf-953c-42a18aa0bab3
 @unpack α, γ, δ = params;
 
+# ╔═╡ 644eed93-fdcc-479d-823d-076d40b517d5
+params.C
+
 # ╔═╡ c2a159f4-cd25-4525-a270-2b3065a0dc0e
-T = 10/params.γ # simulation time
+T = 50/params.γ # simulation time
 
 # ╔═╡ bd7c5323-1763-411a-9d94-ba25d77ea8d9
 md"### Cross-immunity"
@@ -160,12 +167,12 @@ In this case, the mutant cannot even invade the special region and $I_m = 0$.
 # ╔═╡ 9a14582a-1d87-49d6-8377-6df2a309da2d
 begin
 	I_eq_wt_c0 = γ/δ * (α*ϕ_wt - δ)/(α*ϕ_wt) * (
-		min(1, max(0, (M-1)/M * (1-b*ξ)/(1-b*f))) +
-		min(1, max(0, 1/M * (1-b_special*ξ)/(1-b_special*f_special)))
+		(M-1)/M * min(1, max(0, (1-b*ξ)/(1-b*f))) +
+		1/M * min(1, max(0, (1-b_special*ξ)/(1-b_special*f_special)))
 	)
 	I_eq_m_c0 = γ/δ * (α*ϕ_m - δ)/(α*ϕ_m) * (
-		min(1, max(0, (M-1)/M * (1-f/ξ)/(1-b*f))) +
-		min(1, max(0, 1/M * (1-f_special/ξ)/(1-b_special*f_special)))
+		(M-1)/M * min(1, max(0, (1-f/ξ)/(1-b*f))) +
+		1/M * min(1, max(0, (1-f_special/ξ)/(1-b_special*f_special)))
 	)
 	freq_eq_c0 = I_eq_m_c0 / (I_eq_m_c0 + I_eq_wt_c0)
 end
@@ -184,11 +191,11 @@ $$\xi > \langle \epsilon_f \rangle.$$
 
 We have two cases: 
 
-- $\xi > \langle\epsilon_f\rangle
+-  $\xi > \langle\epsilon_f\rangle$
 
 $$\begin{align}
 I^{wt} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{wt} - \delta}{\alpha\phi^{wt}}\frac{1-\langle\epsilon_b\rangle\xi}{1-\langle\epsilon_b\rangle \langle\epsilon_f\rangle}\\
-I^{m} &= \frac{1}{M}\frac{\gamma}{\delta}\frac{\alpha\phi^{m} - \delta}{\alpha\phi^{m}}\frac{1-\langle\epsilon_f\rangle\xi^{-1}}{1-\langle\epsilon_b\rangle\langle\epsilon_f\rangle}\\
+I^{m} &= \frac{\gamma}{\delta}\frac{\alpha\phi^{m} - \delta}{\alpha\phi^{m}}\frac{1-\langle\epsilon_f\rangle\xi^{-1}}{1-\langle\epsilon_b\rangle\langle\epsilon_f\rangle}\\
 \end{align}$$
 
 
@@ -204,9 +211,9 @@ end
 # ╔═╡ 9b771a1e-f823-4b1c-a694-6e1d2d1fcb66
 begin
 	I_eq_wt_clarge = γ/δ * (α*ϕ_wt - δ)/(α*ϕ_wt) * 
-		min(1, max(0, (M-1)/M * (1-b_average*ξ)/(1-b_average*f_average)))
+		min(1, max(0, (1-b_average*ξ)/(1-b_average*f_average)))
 	I_eq_m_clarge = γ/δ * (α*ϕ_m - δ)/(α*ϕ_m) * 
-		min(1, max(0, (M-1)/M * (1-f_average/ξ)/(1-b_average*f_average)))
+		min(1, max(0, (1-f_average/ξ)/(1-b_average*f_average)))
 
 	freq_eq_clarge = I_eq_m_clarge / (I_eq_m_clarge + I_eq_wt_clarge)
 end
@@ -310,6 +317,9 @@ end
 # ╔═╡ 95b3a0b8-d6fd-4554-89c3-73106c5db0d9
 ϕ_m_slider
 
+# ╔═╡ cc0ec860-c204-4b28-b4ce-d69da9116aee
+Ms
+
 # ╔═╡ 51dfe63a-b66e-4073-a531-dd64835158fe
 Cs
 
@@ -333,6 +343,8 @@ pI = let
 	hline!([I_eq_m_c0]; label="c=0", line=(:black, lw+2, 0.3))
 	hline!([I_eq_m_clarge]; label="c large", line=(:dash, :black, lw+2, 0.3))
 
+	hline!([I_eq_wt_c0]; label="c=0", line=(:blue, lw+2, 0.3))
+	hline!([I_eq_wt_clarge]; label="c large", line=(:dash, :blue, lw+2, 0.3))
 	p
 end
 
@@ -364,10 +376,12 @@ end
 # ╟─c6c407d9-fea7-4e79-97ff-6acb88f4356d
 # ╠═c79fe879-a32a-4391-8df1-5b9d9eeb75f5
 # ╠═287520e8-97a3-485b-9634-fd2db7a2f4e6
+# ╠═3074735c-5073-4a7d-8cc9-d983cc0268f2
 # ╠═b3f03e99-9550-4b01-bda1-b7f9f6617c7d
 # ╠═b14f025b-e95f-42fb-a321-4d914f6072ba
 # ╠═f431ba40-9742-4898-92f0-33c3b8e12a1c
 # ╠═e38f872f-f9ec-45cf-953c-42a18aa0bab3
+# ╠═644eed93-fdcc-479d-823d-076d40b517d5
 # ╠═c2a159f4-cd25-4525-a270-2b3065a0dc0e
 # ╟─bd7c5323-1763-411a-9d94-ba25d77ea8d9
 # ╟─a7fc518a-f6d3-4e93-bac5-02d946c768f8
@@ -402,6 +416,7 @@ end
 # ╠═af6249a4-1da6-4bff-8914-0b7ae9195e1b
 # ╟─87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
 # ╠═95b3a0b8-d6fd-4554-89c3-73106c5db0d9
+# ╠═cc0ec860-c204-4b28-b4ce-d69da9116aee
 # ╠═51dfe63a-b66e-4073-a531-dd64835158fe
 # ╟─2e5f1f19-d5f2-4e54-8337-49db178b13c9
 # ╟─add14358-6d60-47a5-876f-8e0651781c57

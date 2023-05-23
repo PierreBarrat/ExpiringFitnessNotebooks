@@ -158,9 +158,6 @@ begin
 	I_eq_m = γ/δ * (Rm-1)/Rm * min(1, max(0, (1-f/ξ)/(1-b*f)))
 end
 
-# ╔═╡ 6fdb85a0-4124-4aec-a0ee-cc5c90041185
-ξ
-
 # ╔═╡ 21a380ab-de02-4407-8d6c-cafe8a85f5d1
 md"Checking that numerically inverting the matrix and the analytical formula give the same result."
 
@@ -263,7 +260,6 @@ end
 # ╠═e7dfd56e-9719-4f9b-a988-e753e118d54f
 # ╠═37a01f00-b8b6-49cc-8ba3-c36593f9fd7d
 # ╠═6dff5b25-43a0-46b7-84bd-8cf438542511
-# ╠═6fdb85a0-4124-4aec-a0ee-cc5c90041185
 # ╟─69171b6c-0d3c-43ed-b52e-1e4da14ae33b
 # ╠═3d1dcb13-ac89-46fd-9466-2f013aaa2935
 # ╠═9bc81dc4-7a27-431f-876c-afaf11b3f54e

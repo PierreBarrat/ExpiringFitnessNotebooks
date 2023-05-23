@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.26
 
 using Markdown
 using InteractiveUtils
@@ -111,6 +111,20 @@ let
 	p
 end
 
+# ╔═╡ 02046fbd-eca7-4ea5-9426-0b7129830608
+md"# Tests"
+
+# ╔═╡ bc9620d5-a13d-4158-9dd5-79b889e2c541
+let
+	mβ = 0.7
+	β2 = 0.525
+	B = get_β_distribution(mβ, β2)
+	x = rand(B, 10_000)
+
+	plot(sort(x), 1:length(x), title = mean(x))
+	plot(0:0.01:1, pdf.(B, 0:0.01:1))
+end
+
 # ╔═╡ Cell order:
 # ╠═768fd5f6-ced3-11ed-18d3-fb9485be70ad
 # ╠═1c910626-d2f4-4896-9272-fffbbe0b0146
@@ -131,3 +145,5 @@ end
 # ╠═65fbcfe1-7b31-4c14-a129-d5290cae357a
 # ╠═4b5372f1-67ab-417f-a57f-9df130e4f4b0
 # ╠═38d32a2b-1c35-4a20-9bb2-ad302fcfa192
+# ╠═02046fbd-eca7-4ea5-9426-0b7129830608
+# ╠═bc9620d5-a13d-4158-9dd5-79b889e2c541
