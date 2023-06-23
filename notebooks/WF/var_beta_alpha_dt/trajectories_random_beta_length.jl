@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 5127cf4e-eb40-11ed-0a15-53a1acf43aef
 begin
 	using Revise
-	using Pkg; Pkg.activate("../../")
+	using Pkg; Pkg.activate("../../../")
 	using Chain
 	using CSV
 	using DataFrames

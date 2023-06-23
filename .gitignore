@@ -1,3 +1,8 @@
+#
+*\.csv
+*\.json
+*\.dat
+
 # 
 notebooks/WF/data*
 
@@ -40,4 +45,6 @@ docs/Manifest.toml
 test/.ipynb_checkpoints/
 .vscode/
 test/.vscode/
+
+
 

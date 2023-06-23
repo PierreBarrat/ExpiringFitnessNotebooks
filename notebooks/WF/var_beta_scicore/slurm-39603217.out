@@ -1,0 +1,65 @@
+  Activating project at `~/ExpiringFitness/ExpiringFitnessNotebooks`
+┌ Info: (mβ = 0.2, β2 = 0.040004000000000005, ρ = 0.0010000000000000002)
+└   i / length(parameters) = 0.0625
+[ Info: Simulating for 12498750 generations (Ne = 12498.750124987497)
+┌ Info: (mβ = 0.4, β2 = 0.16001600000000002, ρ = 0.0010000000000000002)
+└   i / length(parameters) = 0.125
+[ Info: Simulating for 3124688 generations (Ne = 3124.687531246874)
+┌ Info: (mβ = 0.6, β2 = 0.36003599999999997, ρ = 0.0010000000000000002)
+└   i / length(parameters) = 0.1875
+[ Info: Simulating for 1388750 generations (Ne = 1388.7500138875)
+┌ Info: (mβ = 0.8, β2 = 0.6400640000000001, ρ = 0.0010000000000000002)
+└   i / length(parameters) = 0.25
+[ Info: Simulating for 781172 generations (Ne = 781.1718828117185)
+┌ Info: (mβ = 0.2, β2 = 0.040004000000000005, ρ = 0.004641588833612781)
+└   i / length(parameters) = 0.3125
+[ Info: Simulating for 2692774 generations (Ne = 2692.77408513134)
+┌ Info: (mβ = 0.4, β2 = 0.16001600000000002, ρ = 0.004641588833612781)
+└   i / length(parameters) = 0.375
+[ Info: Simulating for 673194 generations (Ne = 673.193521282835)
+┌ Info: (mβ = 0.6, β2 = 0.36003599999999997, ρ = 0.004641588833612781)
+└   i / length(parameters) = 0.4375
+[ Info: Simulating for 299197 generations (Ne = 299.19712057014897)
+┌ Info: (mβ = 0.8, β2 = 0.6400640000000001, ρ = 0.004641588833612781)
+└   i / length(parameters) = 0.5
+[ Info: Simulating for 168298 generations (Ne = 168.29838032070876)
+┌ Info: (mβ = 0.2, β2 = 0.040004000000000005, ρ = 0.02154434690031884)
+└   i / length(parameters) = 0.5625
+[ Info: Simulating for 580141 generations (Ne = 580.140590142583)
+┌ Info: (mβ = 0.4, β2 = 0.16001600000000002, ρ = 0.02154434690031884)
+└   i / length(parameters) = 0.625
+[ Info: Simulating for 145035 generations (Ne = 145.03514753564576)
+┌ Info: (mβ = 0.6, β2 = 0.36003599999999997, ρ = 0.02154434690031884)
+└   i / length(parameters) = 0.6875
+[ Info: Simulating for 64460 generations (Ne = 64.46006557139812)
+┌ Info: (mβ = 0.8, β2 = 0.6400640000000001, ρ = 0.02154434690031884)
+└   i / length(parameters) = 0.75
+[ Info: Simulating for 36259 generations (Ne = 36.25878688391144)
+┌ Info: (mβ = 0.2, β2 = 0.040004000000000005, ρ = 0.10000000000000002)
+└   i / length(parameters) = 0.8125
+[ Info: Simulating for 124988 generations (Ne = 124.98750124987498)
+┌ Info: (mβ = 0.4, β2 = 0.16001600000000002, ρ = 0.10000000000000002)
+└   i / length(parameters) = 0.875
+[ Info: Simulating for 31247 generations (Ne = 31.246875312468745)
+┌ Info: (mβ = 0.6, β2 = 0.36003599999999997, ρ = 0.10000000000000002)
+└   i / length(parameters) = 0.9375
+[ Info: Simulating for 13888 generations (Ne = 13.887500138875)
+┌ Info: (mβ = 0.8, β2 = 0.6400640000000001, ρ = 0.10000000000000002)
+└   i / length(parameters) = 1.0
+[ Info: Simulating for 7812 generations (Ne = 7.811718828117186)
+16515.680904 seconds (535.04 M allocations: 813.026 GiB, 0.68% gc time, 0.04% compilation time: <1% of which was recompilation)
+2468.031887 seconds (87.65 M allocations: 148.254 GiB, 0.63% gc time)
+794.584010 seconds (31.53 M allocations: 56.223 GiB, 0.71% gc time)
+354.748319 seconds (15.36 M allocations: 28.414 GiB, 0.84% gc time)
+2311.044712 seconds (94.75 M allocations: 133.075 GiB, 0.61% gc time)
+383.158333 seconds (18.16 M allocations: 26.780 GiB, 0.78% gc time)
+133.359558 seconds (7.12 M allocations: 10.744 GiB, 0.88% gc time)
+ 64.586006 seconds (3.70 M allocations: 5.675 GiB, 0.92% gc time)
+405.882655 seconds (25.56 M allocations: 24.759 GiB, 0.64% gc time)
+ 72.069669 seconds (5.88 M allocations: 5.313 GiB, 0.84% gc time)
+ 26.786865 seconds (2.53 M allocations: 2.203 GiB, 0.89% gc time)
+ 13.120629 seconds (1.39 M allocations: 1.184 GiB, 0.88% gc time)
+ 91.072312 seconds (15.89 M allocations: 5.654 GiB, 0.70% gc time)
+ 16.766343 seconds (3.90 M allocations: 1.227 GiB, 0.95% gc time)
+  6.261696 seconds (1.72 M allocations: 519.861 MiB, 0.87% gc time)
+  3.033976 seconds (961.87 k allocations: 279.447 MiB, 1.08% gc time)

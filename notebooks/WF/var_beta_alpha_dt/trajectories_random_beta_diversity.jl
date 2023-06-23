@@ -16,9 +16,6 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ 005f6cc1-4ea5-4062-a9b8-8869c6c75d7e
-readdir()
-
 # ╔═╡ cc2f13df-669f-4858-8096-ff6ddf0694d4
 datdir = "data_trajectories_random_beta.jl/"
 
@@ -81,7 +78,6 @@ end
 savefig(p1, "random_beta_figures/diversity.png")
 
 # ╔═╡ Cell order:
-# ╠═005f6cc1-4ea5-4062-a9b8-8869c6c75d7e
 # ╠═bb54e23c-ee66-11ed-3ac8-63f12547877d
 # ╠═cc2f13df-669f-4858-8096-ff6ddf0694d4
 # ╠═aa9a54e8-151f-453d-b313-35b1b5316af8

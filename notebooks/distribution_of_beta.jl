@@ -4,11 +4,22 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ 768fd5f6-ced3-11ed-18d3-fb9485be70ad
 begin
 	using Pkg; Pkg.activate("../")
 	using Distributions
 	using Plots
+	using PlutoUI
 	using StatsBase
 end
 
@@ -75,6 +86,13 @@ a &= \frac{\langle\beta\rangle}{1-\langle\beta\rangle}b.
 Note that there are the following bounds for the moments as parameters: 
 
 $$0 \leq \langle\beta^2\rangle \leq \langle\beta\rangle \leq \sqrt{\langle\beta^2\rangle} \leq 1.$$
+
+Or stated in another way: 
+
+$$\begin{align}
+\langle\beta\rangle^2 &\leq \langle\beta^2 \rangle \leq \langle\beta\rangle \\
+\langle\beta^2\rangle &\leq \langle \beta \rangle \leq \sqrt{\langle\beta^2\rangle}
+\end{align}$$
 """
 
 # ╔═╡ e71073d8-e76d-45d1-aa67-9ffdad6c98e3
@@ -111,6 +129,78 @@ let
 	p
 end
 
+# ╔═╡ 5234c474-80eb-45fb-a3f6-a14b2f7753bd
+@bind mβ Slider(0.05:0.05:0.95, show_value=true, default = 0.5)
+
+# ╔═╡ 340b7282-bbbd-4649-8eea-c58b7d850f16
+let
+	β2 = mβ^2 * 1.01
+	B = get_β_distribution(mβ, β2)
+	x = 0.:0.001:1
+	plot(x, pdf.(B, x), label="β2=$(β2)",)
+
+	β2 = round(mβ^2 + (mβ - mβ^2)/3, sigdigits=3)
+	B = get_β_distribution(mβ, β2)
+	x = 0.:0.001:1
+	plot!(x, pdf.(B, x), label="β2=$(β2)",)
+	
+	# β2 = mβ * 0.9
+	# B = get_β_distribution(mβ, β2)
+	# x = 0.:0.01:1
+	# plot!(x, pdf.(B, x), label="β2=$(β2)",)
+
+	plot!(title = "<β> = $(round(mβ, sigdigits=2))")
+end
+
+# ╔═╡ 401095ef-af81-40f1-b914-8c9a048d45a7
+md"## Mass above $1-e^{-3\rho/\alpha}$"
+
+# ╔═╡ 6ab4ebdc-3204-46c0-b357-cdb148619d4c
+0.2:0.15:0.65 |> collect 
+
+# ╔═╡ 7e7c9997-7f2a-415b-8ed5-fb3719d15190
+500/0.05
+
+# ╔═╡ d6e7301a-cf3f-4b49-ac25-077e5b9eaf5a
+plts_2 = let
+	ρ = .05
+	α = .5
+	thr = 1 - exp(-3*ρ/α)
+	
+	mβvals = 0.2:0.15:0.65 |> collect
+	β2vals = map(mβvals) do m
+		r = range(m^2*1.01, m*0.99, length=8)
+		L = div(length(r), 2)
+		r[1:L]
+	end
+	x = length(mβvals)
+	y = length(first(β2vals))
+	
+
+	plts = Matrix{Any}(undef, y, x)
+	for (i, m) in enumerate(mβvals), (j,v) in enumerate(β2vals[i])
+		B = get_β_distribution(m, v)
+		below = round(cdf(B, thr), sigdigits=2)
+		local x = 0.:0.001:1
+		p = plot(
+			x, pdf.(B, x), label="$below",
+			title = "<β> = $(round(m, sigdigits=2)), <β^2>=$(round(v, sigdigits=2))",
+		)
+		vline!([thr], line=(:black, :dash), label="")
+		plts[j,i] = p
+	end
+	
+	plot(plts..., layout=(x, y), size = (1200, 1200))
+	
+end
+
+# ╔═╡ e858d9ff-63e4-4913-9393-3c050ee74889
+let
+	ρ = .05
+	α = .5
+	thr = 1 - exp(-3*ρ/α)
+end
+
 # ╔═╡ 02046fbd-eca7-4ea5-9426-0b7129830608
 md"# Tests"
 
@@ -145,5 +235,12 @@ end
 # ╠═65fbcfe1-7b31-4c14-a129-d5290cae357a
 # ╠═4b5372f1-67ab-417f-a57f-9df130e4f4b0
 # ╠═38d32a2b-1c35-4a20-9bb2-ad302fcfa192
+# ╠═5234c474-80eb-45fb-a3f6-a14b2f7753bd
+# ╠═340b7282-bbbd-4649-8eea-c58b7d850f16
+# ╟─401095ef-af81-40f1-b914-8c9a048d45a7
+# ╠═6ab4ebdc-3204-46c0-b357-cdb148619d4c
+# ╠═7e7c9997-7f2a-415b-8ed5-fb3719d15190
+# ╠═d6e7301a-cf3f-4b49-ac25-077e5b9eaf5a
+# ╠═e858d9ff-63e4-4913-9393-3c050ee74889
 # ╠═02046fbd-eca7-4ea5-9426-0b7129830608
 # ╠═bc9620d5-a13d-4158-9dd5-79b889e2c541
