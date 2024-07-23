@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.43
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -95,11 +95,13 @@ md"# Simulation"
 # ╔═╡ 7f8d658c-c329-4092-87ae-cfe33d44237e
 md"Defining a region, initially with no mutant"
 
+# ╔═╡ 55ffa5f0-0219-4b96-8b32-8251ab98b19e
+I0 = 1e-6 # initial amount of mutant
+
 # ╔═╡ 599065eb-0f6d-4d70-85ff-8e1ee6e2ad3f
-region = begin
+region = let
 	S0 = .4
-	I0 = 1e-6
-	C0 = 0
+	C0 = 1e-9
 	R0 = 1 - S0 - I0 - C0
 	wt = PSS.Virus(; S=S0, I=I0, C=C0, R=R0)
 	mut = PSS.Virus(; S=1, I=0, C=0., R=0.)
@@ -141,9 +143,6 @@ md"# Figures"
 # ╔═╡ d3584ba9-76a1-40e1-bdef-3121e2f5eba1
 md"## Infectious"
 
-# ╔═╡ 719da986-b2ea-4342-a66e-f6be74a1845c
-
-
 # ╔═╡ bce748d4-7f16-47c3-9b22-cfdceb51f3a8
 md"## Susceptibles"
 
@@ -162,27 +161,38 @@ x_slider
 # ╔═╡ 0a922610-3be6-4c1f-b4f1-701cf6e76fcb
 K
 
-# ╔═╡ e9ccf16d-9768-4eeb-a5b8-33703f150b3a
-let
-	fvals = range(0, 1, 1000)
-	plot(fvals, map(f -> 2*(1-f)/(1+2*f), fvals))
+# ╔═╡ ae22a040-ce20-429b-9e5e-67208ab9a9db
+init_growth_rate = let
+	R0 = α/δ
+	(1-f)*(R0-1) / (1 + f*(R0-1))
 end
 
-# ╔═╡ e91b730e-141b-4829-8619-d4a038f8803c
-let
-	s0 = 0.03
-	(2 - s0)/2/(1+s0)
+# ╔═╡ 203fb7e3-bfd2-4195-a6bc-f1f8452233f1
+function logistic(t, x0, s)
+	return exp(s*t) / (1/x0 - 1 + exp(s*t))
 end
+
+# ╔═╡ f98cf196-a1c1-4e02-a6ff-e1f2408084b5
+let
+	tvals = range(0, 200, 100)
+	plot(tvals, logistic.(tvals, 1e-6, init_growth_rate))
+end
+
+# ╔═╡ 4363975c-c5e4-430e-8ea9-c9e2d51b36bf
+logistic(0, 1e-8, init_growth_rate)
+
+# ╔═╡ 8823aa48-bade-4f67-9b73-8816badff48c
+blank_sp() = plot(legend=false,grid=false,foreground_color_subplot=:white)
 
 # ╔═╡ 24cdb593-8465-4180-a42a-082bcb6a01a8
 # Simulation time
-T = 1/γ
+T = 3/γ
 
 # ╔═╡ 21040858-5c97-43a3-b38f-4e4ce5c90ef7
 state_init = let
 	state = PSS.SIRState(; regions=[region], parameters=params)
-	sol = PSS.simulate(state, (0, 10*T))
-	PSS.set_infected(sol(10*T), 2, I0) # infect with mutant
+	sol = PSS.simulate(state, (0, T))
+	PSS.set_infected(sol(T), 2, 1e-6) # infect with mutant
 end;
 
 # ╔═╡ 05f3e103-28a2-466e-829f-ea302f921712
@@ -214,8 +224,6 @@ pI = let
 		plot!(tvals, I, color=a, label=v(a))
 	end
 
-	# ν = α / (δ + f*(α-δ)) - 1
-	# plot!(tvals, map(t -> exp(ν*t)*I0, tvals))
 	p
 end
 
@@ -230,6 +238,7 @@ pS = let
 		ylabel="",
 		title="Susceptibles",
 		legend=:bottomright,
+		xlim = (-10, 500)
 	)
 
 	for a in 1:2
@@ -239,7 +248,6 @@ pS = let
 
 	hline!([δ/α], line=(:grey, 10, .5), label="")
 	
-	
 	p
 end
 
@@ -247,7 +255,7 @@ end
 p_freq = let
 	
 	p = plot(
-		xlabel="time", 
+		# xlabel="time", 
 		ylabel="",
 		title="Mutant frequency",
 		legend=:bottomright,
@@ -260,10 +268,42 @@ p_freq = let
 
 	plot!(tvals, freq, label="")
 	hline!([x], line=(5, :grey, 0.5), label="")
-	ν = α / (δ + f*(α-δ)) - 1
-	plot!(tvals, map(t -> exp(ν*t)*freq[1], tvals))
-	plot!(ylim = (0,1))
+
 	p
+end
+
+# ╔═╡ 5398dc6c-5847-43a7-b0ef-2d4f7353a1f3
+state_final = sol(T);
+
+# ╔═╡ c12b014b-5bce-4798-9f05-c486b0eb0715
+p_freq_init = let
+	tvals = range(0, T/15, length=1_000) # relevant range of time values 
+	
+	p = plot(
+		xlabel="time", 
+		ylabel="",
+		# title="Mutant frequency",
+		legend=:bottomright,
+		frame = :box,
+		# ylim = (1e-8, 1),
+		# yscale=:log10,
+		size = (900, 900)
+	)
+
+	Iwt = sol[tvals, 1, 1, :I]
+	Im = sol[tvals, 1, 2, :I]
+	freq = Im ./ (Iwt + Im)
+	f0 = Im[1] / (Im[1] + Iwt[1])
+
+	plot!(tvals, freq, label="")
+	plot!(
+		tvals, logistic.(tvals, f0, init_growth_rate);
+		label="", line = (:black, :dash, 5, .5)
+	)
+	# hline!([x], line=(5, :grey, 0.5), label="")
+
+	p
+	
 end
 
 # ╔═╡ f3b71945-223e-4fc9-8cae-1a6c0335c02d
@@ -272,11 +312,23 @@ let
 		pS, pI, p_freq;
 		layout = grid(1,3), size = (3*900, 900), margin=10mm,
 	)
+
+	# savefig("$(homedir())/Documents/BaleLabo/Notes/ExpiringFitness/figures/two_strains_full_sweep_oscillations.png")
+
 	panel
 end
 
-# ╔═╡ 5398dc6c-5847-43a7-b0ef-2d4f7353a1f3
-state_final = sol(T);
+# ╔═╡ c86ef99b-ba3d-4540-837c-883c8943cef2
+let
+	panel = plot(
+		pS, pI, p_freq, blank_sp(), blank_sp(), p_freq_init;
+		layout = grid(2,3), size = (3*900, 2*900), margin=10mm,
+	)
+
+	savefig("$(homedir())/Documents/BaleLabo/Notes/ExpiringFitness/figures/two_strains_full_sweep_oscillations.png")
+
+	panel
+end
 
 # ╔═╡ Cell order:
 # ╠═2fe14f34-b81c-11ed-3729-67545b356a8b
@@ -294,6 +346,7 @@ state_final = sol(T);
 # ╟─0fb3d755-b409-47d0-bc4d-75a002ba96d6
 # ╟─b2148183-228f-45bf-a879-b5e6039ea5f4
 # ╟─7f8d658c-c329-4092-87ae-cfe33d44237e
+# ╠═55ffa5f0-0219-4b96-8b32-8251ab98b19e
 # ╠═599065eb-0f6d-4d70-85ff-8e1ee6e2ad3f
 # ╟─eb246d46-a899-4330-b430-a1c0ff5d8bc7
 # ╠═21040858-5c97-43a3-b38f-4e4ce5c90ef7
@@ -309,7 +362,6 @@ state_final = sol(T);
 # ╠═9d81f6f3-b341-4a56-ac8c-c63de91c541f
 # ╟─d3584ba9-76a1-40e1-bdef-3121e2f5eba1
 # ╠═003b59ba-412f-4dc7-8b77-5e8761b02ed1
-# ╠═719da986-b2ea-4342-a66e-f6be74a1845c
 # ╟─bce748d4-7f16-47c3-9b22-cfdceb51f3a8
 # ╠═6f0479e9-aae3-4052-911a-b5877d688c81
 # ╟─0a1f80c2-cf56-418e-b40d-d1645d11a8e9
@@ -317,8 +369,13 @@ state_final = sol(T);
 # ╠═99c10963-5219-4b49-9992-d9628dac69df
 # ╠═0ce1c6b9-b046-4488-b48d-af3c8422d6c7
 # ╠═0a922610-3be6-4c1f-b4f1-701cf6e76fcb
-# ╠═e9ccf16d-9768-4eeb-a5b8-33703f150b3a
-# ╠═e91b730e-141b-4829-8619-d4a038f8803c
-# ╟─35d7f467-2a87-40c8-9142-993cf9057529
-# ╠═f3b71945-223e-4fc9-8cae-1a6c0335c02d
+# ╠═ae22a040-ce20-429b-9e5e-67208ab9a9db
+# ╠═203fb7e3-bfd2-4195-a6bc-f1f8452233f1
+# ╠═f98cf196-a1c1-4e02-a6ff-e1f2408084b5
+# ╠═4363975c-c5e4-430e-8ea9-c9e2d51b36bf
+# ╠═c12b014b-5bce-4798-9f05-c486b0eb0715
+# ╠═8823aa48-bade-4f67-9b73-8816badff48c
+# ╠═35d7f467-2a87-40c8-9142-993cf9057529
 # ╠═24cdb593-8465-4180-a42a-082bcb6a01a8
+# ╠═f3b71945-223e-4fc9-8cae-1a6c0335c02d
+# ╠═c86ef99b-ba3d-4540-837c-883c8943cef2

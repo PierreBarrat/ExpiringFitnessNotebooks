@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 10b7789c-e56f-4b71-8e38-312af11bb751
 begin
-	using Pkg; Pkg.activate("../../../")
+	using Pkg; Pkg.activate("../../../../")
 	using Chain
 	using CSV
 	using DataFrames
@@ -34,7 +34,9 @@ mkpath(savedir)
 begin
 	mβvals = 0.3:0.3:0.9 |> collect
 	β2vals = map(mβvals) do m
-        [m^2 + (m - m^2)/3]
+		r = range(m^2*1.00001, m*0.99, length=2)
+		L = div(length(r), 2)
+		r[1:L]
 	end
 
 	βvals = reverse([(mβ=m, β2=v) for (j, m) in enumerate(mβvals) for v in β2vals[j]])

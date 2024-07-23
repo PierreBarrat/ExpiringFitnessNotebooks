@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.43
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 10b7789c-e56f-4b71-8e38-312af11bb751
 begin
 	using Revise
-	using Pkg; Pkg.activate("../../")
+	using Pkg; Pkg.activate("../../../../")
 	using Chain
 	using CSV
 	using DataFrames
@@ -40,9 +40,10 @@ end
 
 # ╔═╡ afe7bf04-d998-46fc-afed-8e2cd21361d2
 begin
-	svals = [0.01, 0.1, 0.3]
-	ρvals = [1/4, 1/12, 1/24, 1/52]
-	Δtvals = [1, 3, 10, 30]
+    s0 = 0.03
+	svals = [s0]
+	ρvals = ρvals = [1/20, 1/5, 1] * s0
+    Δtvals = [1]
 	md"**Variable parameters**"
 end
 
@@ -121,8 +122,8 @@ filenames = map(enumerate(collect(keys(trajectories)))) do (idx, p)
 		ρ = p.ρ,
 		s = p.s,
 		Δt = p.Δt,
-		L=L, 
-		N=N,
+		L = L,
+		N = N,
 		trajectory_file = "trajectory_$(idx).csv",
 		diversity_file = "diversity_$(idx).csv",
 		idx = idx,

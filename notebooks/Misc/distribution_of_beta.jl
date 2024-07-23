@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.45
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -16,7 +16,7 @@ end
 
 # ╔═╡ 768fd5f6-ced3-11ed-18d3-fb9485be70ad
 begin
-	using Pkg; Pkg.activate("../")
+	using Pkg; Pkg.activate("../../")
 	using Distributions
 	using Plots
 	using PlutoUI
@@ -140,6 +140,7 @@ let
 	plot(x, pdf.(B, x), label="β2=$(β2)",)
 
 	β2 = round(mβ^2 + (mβ - mβ^2)/3, sigdigits=3)
+	# β2 = mβ * .99
 	B = get_β_distribution(mβ, β2)
 	x = 0.:0.001:1
 	plot!(x, pdf.(B, x), label="β2=$(β2)",)

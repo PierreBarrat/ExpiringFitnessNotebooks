@@ -14,7 +14,7 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 18f13b50-103d-11ee-2489-17399f00a9a5
+# ╔═╡ 91c46254-15c5-11ee-37ad-ad97c71c3bbb
 begin
 	using Chain
 	using DifferentialEquations
@@ -26,275 +26,244 @@ begin
 	using StatsBase
 end
 
-# ╔═╡ 6450af91-81c1-4fbf-bc53-3e2a13ecd350
+# ╔═╡ 78b73cb9-415a-42c6-921f-0ad465c058d6
 PlutoUI.TableOfContents()
 
-# ╔═╡ 802a5629-d0e7-4621-9627-a6dd74d9b01b
-md"# Setup"
+# ╔═╡ f3fc225f-79d9-4d06-a704-e209a74d0081
+md"""
+# Aim
 
-# ╔═╡ 58a5165c-c5a9-429b-b994-77130101bcca
-md"### Parameters"
+We consider the case of two partial sweeps starting with a time interval $\Delta t$. The simulation is as follows.  
+- At time $t=0$, a first mutant appears with initial fitness $\phi_1(t=0)=\phi$. We call $x_1$ the frequency of this first mutation, with $x_1(t=0) = 1/N$. 
+- At time $t=\Delta t$, a second mutant appears at initial frequency $x_2(t=0) = 1/N$ and the same initial fitness $\phi_2(t=0) = \phi_1(t=0) = \phi$. This second mutant either appears on a background that already carries mutation 1 with probability $x_1(\Delta t)$, or on the wild-type background with probability $1-x_1(\Delta t)$. 
 
-# ╔═╡ dc781979-1267-47e0-b758-967d6d600cbf
+Note that the two mutations have the same initial fitness effect. Taken one by one, both would sweep to frequency $\beta = 1-e^{-\phi/\alpha}$. We always assume that the fitness of the wild-type is strictly zero. 
+
+The aim of this analysis is to determine the final frequency of the first mutant in the two cases.
+"""
+
+# ╔═╡ 6dc3b64a-65e7-4741-9f50-3179702ba04c
+md"""
+The relevant timescale for partial sweep is the time it takes to reach frequency $\beta$ starting from $x_{init} = N^{-1}$ with growth at rate $s$. We use 
+
+$$\tau = \phi^{-1}\log(N\beta)$$ 
+
+as a timescale.
+"""
+
+# ╔═╡ 6a10ec11-3df2-476d-ba2a-2d3cd1ab4f38
+md"# Parameters"
+
+# ╔═╡ 064c7845-595a-48f1-8655-247d6b12768f
 begin
 	# fitness
-	ϕ1 = 0.1
-	ϕ2 = 0.1
+	ϕ = 0.1
 
 	# fitness decay
 	α = 0.1
 	params = (α = α,)
 
 	# β
-	β1 = 1 - exp(-(ϕ1)/α)
-	β2 = 1 - exp(-(ϕ2)/α)
-	βe = (1 - exp(-(ϕ1+ϕ2)/α))/2
+	β = 1 - exp(-(ϕ)/α)
+	βe = (1 - exp(-2*ϕ/α))/2 # = β(1-β) + β
 	
 	# initial frequency of sweeping mutations
-	x_init = 1e-3 
+	N = 1000
+	x_init = 1/N
 end
 
-# ╔═╡ 44abf4f8-cde3-48a9-8344-550b262abd0c
-md"""
-The time to completion for a sweep of fitness effect $\phi$ and starting at initial frequency $x_0$ is 
+# ╔═╡ 552e4943-5e4a-4ca2-8bd2-7cfdcc6fc74a
+τ = log(β*N) / ϕ
 
-$$T^{sw} \simeq 2\phi^{-1}\log(β/x_0).$$
+# ╔═╡ 1649f5d2-fc15-4952-b88d-776f9b71a1fb
+md"""
+# Mutations on different backgrounds
 """
 
-# ╔═╡ a6c60e3a-99ea-416d-9abc-3fea1e47fa6e
-time_for_sweep = 2*log(β1/x_init)/ϕ1
+# ╔═╡ b809b722-f29d-48c3-84d5-0d5e4e8a1441
+md"*Note*: this case happens with probabilty $1 - x_1(\Delta t)$"
 
-# ╔═╡ d2413398-3a9b-4a87-b8bf-e05e79c1a8dd
+# ╔═╡ 413f8b62-738d-4b80-ba97-11688890c025
 md"""
-More generally, I can scale time by $\phi^{-1}\log(β/x_0)$.
+## Differential equations for two competing sweeps.
+
+Let's respectively call $x_0$, $x_1$ and $x_2$ the frequencies of the wild-type, the first mutant and the second mutant. Since the two mutations never appear on the same genome, we have $x_0 + x_1 + x_2 = 1$. 
+
+The dynamics are as follows for each variant $i \in \{0,1,2\}$: 
+
+$$\begin{align}
+\dot{x}_i &= (\phi - \bar{\phi})x_i,\\
+\dot{\phi}_i &= -\alpha x_i \phi.
+\end{align}$$
+
+with initial conditions
+
+$$\begin{align}
+&x_1(t=0) = \frac{1}{N},\\
+&x_2(t < \Delta t) = 0 \;\;\text{and}\;\; x_2(\Delta t) = \frac{1}{N}.
+\end{align}$$ 
 """
 
-# ╔═╡ 17f6460b-2e03-498d-9b9e-ef8e6716ef62
-time_scale = time_for_sweep/2
-
-# ╔═╡ 6c9c8e3b-437a-4703-b0a7-45abcbb33c6e
+# ╔═╡ 4c50ba3b-4f69-423f-aa71-cc67a228b925
 md"""
-### Functions for simulation
+## Small delay: $\Delta t \ll \tau \equiv \phi^{-1}\log(\beta N)$
 
-The functions below simulate the differential equations with the second sweep delayed by time $\tau$. The vector `u` or `u0` in the code contains `[x0, x1, x2, ϕ0, ϕ1, ϕ2]` with `x0` the frequency of the wild-type and `ϕ0=0`. 
+In this case, we assume that the two partial sweeps started at the same time. Since the initial fitness values are the same, we have $x_1=x_2$ at all times, and the two mutations have the exact same trajectory. 
+By introducing $y=x_1 + x_2$ and $\psi = \phi_1 = \phi_2$, we obtain the following equations of motion: 
+
+$$\begin{align}
+\dot{y} &= (\psi - \bar{\psi})y = \psi y(1-y),\\
+\dot{\psi} &= -\alpha \frac{y}{2}\psi,
+\end{align}$$
+
+with the initial condition $y(t=0) = 2/N$ and $\psi(t=0) = \phi$.
+
+The summed frequency of the two mutants $y$ will do a partial sweep with initial fitness $\phi$ and an effective decay rate $\alpha/2$. We finally obtain the following final value for the sweeps: 
+
+$$x_1(t=\infty) = x_2(t=\infty) = \beta_e \equiv \frac{(1 - e^{-2\phi/\alpha})}{2} = \beta - \frac{\beta^2}{2}.$$
+
+In this scenario, the frequency trajectory of the first mutation is a partial sweep of amplitude $\beta_e$. We have
+
+$$x_1^\infty = x_1^{max} = \beta_e = \beta - \frac{\beta^2}{2}.$$
+
+Note that that we always have $\beta(1-\beta) \leq \beta_e \leq \beta$.
 """
 
-# ╔═╡ 06ec2edc-495e-4dd8-b2b2-69cc228210cc
-md"# Results"
-
-# ╔═╡ 13658da8-5369-4888-a0d2-d030a97695b5
-md"## Max and final value of x1 for different backgrounds"
-
-# ╔═╡ 7b811e87-7cd2-460b-8ee0-46d8e8fc2814
-βe
-
-# ╔═╡ 9cfc45db-aa2e-480c-928e-229a292d7d78
-md"## Same background"
-
-# ╔═╡ 376626ba-d5df-4821-8d17-071267d639a8
-md"## Average behavior"
-
-# ╔═╡ b3d79980-e813-4d1d-a125-ab6226fd1ae6
-md"### Average trajectory for a fixed delay"
-
-# ╔═╡ 9ee205ac-6ffb-4556-9777-e66267ecdbf5
-md"### Average final value vs delay"
-
-# ╔═╡ a4fb40d0-71c3-4afc-950e-f7170395d277
-md"### Distribution of final value for random delay"
-
-# ╔═╡ e9708a27-a901-4629-a05b-32c240407509
+# ╔═╡ c751c0af-4775-4039-86ea-ab5f0a835c03
 md"""
-Not all delay values are equally probable. If sweeps happen at a fixed rate $\rho$, the probability that the time separating the first and second sweep is $\tau$ is $\propto e^{-\rho\tau}$. For a given delay $\tau$, we numerically computed the final value of the first sweep $x_1^{\infty}$. What is interesting is the distribution of $x_1^{\infty}$ when delays are randomly chosen. 
-What we expect: 
-- for large $\rho$, *i.e.* $\rho \gg T^{sw}$, we expect $x_1^{\infty}$ to be equal to $\beta$ most of the time, since delays are long;
-- for low $\rho$, it should peak somewhere in between $\beta_e$ and $\beta(1-\beta)$. 
+## Large delay: $\Delta t \gg \tau$
+
+In this case, the first mutant first reaches frequency $\beta = 1-e^{-\phi/\alpha}$, before dropping to frequency $\beta(1-\beta)$ when the second mutant has completed its own sweep. 
+We thus have
+
+$$x_1^\infty = \beta(1-\beta) \;\;\text{and}\;\; x_1^{max} = \beta.$$
 """
 
-# ╔═╡ 17fae642-99bb-4163-ba90-091f0994fd59
-β1
+# ╔═╡ 85278ecc-6e5e-47df-a5ea-5d19f3015782
+md"## Simulation"
 
-# ╔═╡ e0c507dc-c991-4afb-bd38-927a4cb4f846
-md"# Testing"
+# ╔═╡ 105ec0bf-a351-4724-b1cc-003d6eecc1b8
+md"### Simulating for a fixed delay $\Delta t$"
 
-# ╔═╡ 1730d195-c4a7-4a5e-bd1d-0821a540f850
-let
-	β(ϕ) = 1-exp(-ϕ)
-	βe(ϕ) = β(2*ϕ)/2
+# ╔═╡ a88615d7-3154-403c-82a6-6348b233a796
+md"### Varying $\Delta t$"
 
-	ϕvals = 0:0.01:3
-	p = plot(
-		xlabel = "ϕ/α",
-	)
-	plot!(ϕvals, map(ϕ -> β(ϕ)*(1-β(ϕ)), ϕvals), line = (2), label = "β(1-β)")
-	plot!(ϕvals, map(βe, ϕvals), line = (2), label = "βe")
-	plot!(ϕvals, map(β, ϕvals), line = (:black, :dash), label = "β")
-	# plot!(ϕvals, map(ϕ -> (β(ϕ)*(1-β(ϕ)) + β(ϕ))/2, ϕvals))
-end
+# ╔═╡ 67854611-8e03-4988-a6a6-69000fc09231
+md"""
+Below, we numerically simulate the behavior of the final and maximum values of $x_1$ ($x_1^\infty$ and $x_1^{max}$) in the case of different backgrounds. 
+The results qualitatively agree with the extreme cases discussed above: 
+- at low $\Delta t/\tau$, $x_1^{\infty} = x_1^{max} = \beta_e$;
+- at high $\Delta t / \tau$, $x_1^{\infty} = \beta(1-\beta)$ and $x_1^{max} = \beta$.
 
-# ╔═╡ 3754ddf9-2e92-412a-9062-d601e0689da0
-begin
-	ϕmean = (ϕ1 + ϕ2)/2
-	ϕref = min(ϕ1, ϕ2)
-	tspan = (0.0, 30/ϕref)
-end
+A non-trivial phenomenon is that $x_1^{max}$ does not behave monotonically with $\tau$: it first drops from $\beta_e$ to a minimum, before rising to $\beta$. 
+"""
 
-# ╔═╡ 47554178-cedd-4839-8f2b-35bd9b709231
-md"# Helper Functions"
+# ╔═╡ af54e29f-669a-4d3c-83da-6fee17119e82
+md"# Mutations on the same background"
 
-# ╔═╡ f74303aa-13bc-48cc-a84f-eb80b2d1d4c3
+# ╔═╡ cd4f1fc8-6002-44d1-a467-fda6a59dfa47
+md"*Note*: this happens with probability $x_1(\Delta t)$"
+
+# ╔═╡ 3c398e26-7a2a-4b15-b743-071d3e58d3b7
+md"""
+## Short delay $\Delta t \gg \tau$
+
+If the two mutants appear at the same time and on the same background, we essentially have one mutant with initial fitness effect $2\phi$, and $x_1 = x_2$. 
+The frequency trajectory of the first mutation will thus be a partial sweep with an initial fitness $2\phi$, and we have
+
+$$x_1^{\infty} = x_1^{max} = 1-e^{-2\phi/\alpha} = 2\beta_e.$$
+"""
+
+# ╔═╡ 34b9ffc5-b276-4be7-99a6-cb3f4a4bae32
+md"""
+## Long delay $\Delta t \ll \tau$
+
+In this case, the first mutant reaches frequency $\beta$ in a first stage, and is then pushed up to frequency $\beta + \beta(1-\beta) = 2\beta_e$ when the second mutant appears and sweeps. 
+
+We again have
+
+$$x_1^{\infty} = x_1^{max} = 1-e^{-2\phi/\alpha} = 2\beta_e.$$
+"""
+
+# ╔═╡ edf04116-f22a-4683-b3cb-c09863ba976d
+md"## Simulating"
+
+# ╔═╡ 7d298fe2-9a99-489f-a0eb-bfabd052bd79
+md"### Fixed $\Delta t$"
+
+# ╔═╡ b325c3e7-8e76-4c42-8e0a-bedbfe7308ec
+md"""
+### Varying $\Delta t$
+
+Below, we numerically simulate the behavior of the final and maximum values of $x_1$ ($x_1^\infty$ and $x_1^{max}$) in the case of same backgrounds. 
+Again, the results qualitatively agree with the extreme cases discussed above: both at low and high $\Delta t/\tau$, $x_1^{\infty} = x_1^{max} = 2\beta_e$.
+
+However, there is another non-trivial observation: $x_1^{max}=x_1^\infty$ goes through a maximum instead of staying constant at $2\beta_e$.
+"""
+
+# ╔═╡ f6d92a0e-f0e9-4790-ac9f-89e700109c2b
+md"# Average behavior of $x_1^\infty$ and $x_1^{max}$"
+
+# ╔═╡ b0877a57-a0af-4484-82c9-70fc01e72948
+md"""
+To compute the average behavior of $x_1$, we need to combine the two scenarios above with their respective weights $1-x_1(\Delta t)$ and $x_1(\Delta t)$. We are essentially combining the two plots in the panel below with these weights. 
+"""
+
+# ╔═╡ 1c8cf0b2-62e0-4ec9-a405-43988b6fee69
+md"""
+As a function of $\Delta t/\tau$, we thus expect the final value $x_1^\infty$ to  behave as follows: 
+- at low $\Delta t/\tau$, it initially decreases from $\beta_e$, following the left plot with probability close to 1. 
+- at high $\Delta t/\tau$, it follows the left plot with probability $1-\beta$ and the right one with probability $\beta$, giving
+
+$$\langle x_1^\infty\rangle = (1-\beta)\cdot\beta(1-\beta) + \beta\cdot 2\beta_e = \beta,$$
+
+as expected. It will thus go through a non-trivial minimum between those two values. 
+
+The behavior maximum of the average trajectory $\langle x_1 \rangle^{max}$ is less trivial to read from the plots, but we expect it to roughly increase from $\beta_e$ to $\beta$. 
+"""
+
+# ╔═╡ 6228e8d6-f5f6-4df1-9a15-a8d6b9e5d65e
+md"# Utility functions"
+
+# ╔═╡ b4f87b41-7a8e-48fb-8fc1-9965f2a5ba1f
 logrange(x, y, L) = exp.(range(log(x), log(y), length=L))
 
-# ╔═╡ d13bf03c-f97d-48ab-90dd-6d32b5dbdbbe
-# values for the delay
-τvals = logrange(time_scale/50, 3*time_scale, 20)
+# ╔═╡ 534fa42e-1260-4bc8-9ad9-32505f4836f8
+Δt_vals = logrange(τ/50, 3*τ, 20)
 
-# ╔═╡ 50819d96-439a-45ab-a530-fc774c6abc8d
-ρvals = @chain begin # in principle 1/τvals, but I want a shorter array
-	logrange(time_for_sweep/50, 2*time_for_sweep, 9)
-	1 ./ _
-end
-
-# ╔═╡ cdff9662-a6ac-4fed-bb06-62595100ce2a
-ρvals
-
-# ╔═╡ b524e772-9806-4038-8286-6c0fd265c1ce
-begin
-	x1_0 = 1e-4
-	x2_0_s = @bind x2_0 Slider(
-		vcat([0], logrange(1e-7, x1_0, 10)); default = 1e-7, show_value=true
-	)
-	u0 = [(1-x1_0-x2_0), x1_0, x2_0, 0., ϕ1, ϕ2]
-end
-
-# ╔═╡ 5e6e8074-654e-44ab-9d07-6bcc4d6515ca
-delay = let
-	τvals = @chain begin
-		2*log(β1/x1_0)/ϕ1 # time for 1 to finish its sweep
+# ╔═╡ e8f41eaf-a3c1-44b5-b35a-dbd95c062d76
+delay_slider = let
+	dt_vals = @chain begin
+		2*log(β/x_init)/ϕ # time for 1 to finish its sweep
 		logrange(_/20, 1.5*_, 10)
 		vcat([0], _)
+		_/τ
 		sort
 	end
-	τs = @bind τ Slider(τvals, show_value=true, default = τvals[end])
-	md"Delay : $(τs)"
+	slider = @bind Δt Slider(dt_vals, show_value=true, default = dt_vals[end])
+	md"Δt - scaled to $\phi^{-1}\log(\beta N)$: $(slider)"
 end
 
-# ╔═╡ c6e0070b-646b-4506-b9ef-a85796323966
-delay
+# ╔═╡ d76403df-37c6-43ad-9376-f18654b49478
+delay_slider
 
-# ╔═╡ 2192bd62-e6ab-4092-b341-c1e6a1a4f463
-delay
+# ╔═╡ 3df15166-f925-40b4-9d3f-e212c55ec406
+delay_slider
 
-# ╔═╡ 1b6b8d61-30b1-4222-98b5-ee4dd0c021ad
-x2_0_s
+# ╔═╡ e8b54c8f-0274-4ff3-b0f5-39bead05c7df
+md"""
+The functions below simulate the differential equations with the second sweep delayed by time $\tau$. The vector `u` or `u0` in the code contains `[x0, x1, x2, ϕ0, ϕ1, ϕ2]` with `x0` the frequency of the wild-type and `ϕ0=0`. 
 
-# ╔═╡ ac69cfbf-e645-4f66-827e-835df3e2a03e
-sol = solve(ODEProblem(expsel!, u0, tspan, params));
+The first two cells simulate the case where the second partial sweep happens on the same background as the first one. The next two the other case, with different backgrounds.
+"""
 
-# ╔═╡ a13f19b7-60b0-4e23-8fe8-330c6a9b7648
-let
-	tvals = range(tspan..., length=100)
-	p = plot(yscale = :linear)
-
-	plot!(tvals, map(t -> sol(t)[2], tvals), color=1, label = "x1")
-	plot!(tvals, map(t -> sol(t)[3], tvals), color=2, label = "x2")
-
-
-	hline!([β2], line=(:dash), color=2, label="β2")
-	hline!([β1], line=(:dashdot), color=1, label="β1")
-	hline!([β1 * (1-β2)], line = (:dash, :black), label = "β1(1-β2)")
-
-	p
-end
-
-# ╔═╡ 2e1459b7-70a8-4202-bd01-1db7aa08ee3f
+# ╔═╡ 0096a0ed-73b6-4b20-ac12-f95f5d8d217a
 function mean_fitness(u)
 	L = div(length(u), 2)
 	return mapreduce(prod, +, zip(u[1:L], u[(L+1):end]), init = 0)
 end
 
-# ╔═╡ bd5f877e-2189-497b-bfd9-22bbd78fb759
-function expsel_diff!(du, u, p, t)
-	# u[1:2:L] are the frequencies
-	# u[(L+1):end] are the fitnesses
-	mf = mean_fitness(u)
-	L = div(length(u), 2)
-	for i in 1:L
-		du[i] = (u[L+i] - mf) * u[i]
-		du[L+i] = -p.α * u[i] * u[L+i]
-	end
-	return nothing
-end
-
-# ╔═╡ 93e8b330-3f2b-4a7c-9e9b-82960d894416
-function simulate_diff_background(τ)
-	params = (α = α,)
-	# first part of the solution [0, τ]
-	u0 = u0 = [(1-x_init), x_init, 0, 0., ϕ1, 0]
-	tspan_1 = (0., τ)
-	sol_1 = solve(ODEProblem(expsel_diff!, u0, tspan_1, params))
-	
-	# second part [τ, tmax]
-	ϕ1_τ = sol_1(τ)[5]
-	x1_τ = sol_1(τ)[2]
-	u0 = u0 = [(1- x1_τ - x_init), x1_τ, x_init, 0., ϕ1_τ, ϕ2]
-	tspan_2 = (0, 100/min(ϕ1, ϕ2))
-	sol_2 = solve(ODEProblem(expsel_diff!, u0, tspan_2, params))
-	
-	tvals = @chain vcat(tspan_1..., tspan_2...) extrema range(_..., length=1000)
-	x1 = map(t -> t < τ ? sol_1(t)[2] : sol_2(t-τ)[2], tvals)
-	x2 = map(t -> t < τ ? sol_1(t)[3] : sol_2(t-τ)[3], tvals)
-	return tvals, x1, x2 
-end
-
-# ╔═╡ 53d05119-2527-406d-8ac0-7ec96ac49939
-let
-	τ1 = log(β1/x1_0)/ϕ1 |> round
-	plot(
-		ylim = (-0.01, 1.01),
-		title = "Different backgrounds \n Delay (scaled): $(round(τ/τ1, sigdigits=2))",
-		size = (600, 600),
-		ylabel = "frequency",
-		xlabel = "time (scaled)",
-		frame = :box
-	)
-	
-	tvals, x1, x2 = simulate_diff_background(τ)
-	plot!(tvals / time_scale, x1, line = (2), label = "first sweep")
-	plot!(tvals / time_scale, x2, line = (2), label = "second sweep")
-
-	hline!([β1], label="β", line = (:black))
-	hline!([β1*(1-β2)], label = "β(1-β)", line = (:black, :dash))
-	hline!([βe], label = "βe", line  = (:black, :dashdot))
-end
-
-# ╔═╡ 312bf656-d11f-458c-a3aa-ae815603f6b1
-let
-	max_val, final_val = @chain begin
-		map(τvals) do τ
-			_, x1, _ = simulate_diff_background(τ)
-			maximum(x1), x1[end]
-		end
-		[x[1] for x in _], [x[2] for x in _]
-	end
-
-	p = plot(
-		legend = :right,
-		xscale = :linear,
-		xlabel = "delay",
-		title = "Separate backgrounds \n max/final value of first mut."
-	)
-	
-	plot!(τvals, max_val, label="max")
-	plot!(τvals, final_val, label = "final")
-	
-	hline!([β1], label="β1", line = (:black))
-	hline!([β1*(1-β2)], label = "β(1-β)", line = (:black, :dash))
-	# T = time_scale/2
-	# plot!(τvals, map(x -> exp(-x)*βe + (1-exp(-x))*β1*(1-β2), τvals/T))
-end
-
-# ╔═╡ 8d3af15e-56d5-4c64-8cbc-3fdb2d5b1e9f
+# ╔═╡ e4421869-5c5c-42ad-bbd9-69f6065d167f
 function expsel_same!(du, u, p, t)
 	# u[1:2:L] are the frequencies
 	# u[(L+1):end] are the fitnesses
@@ -308,38 +277,37 @@ function expsel_same!(du, u, p, t)
 	return nothing
 end
 
-# ╔═╡ 85fe3bd3-23ca-4b69-96f4-95c6c1c86ace
-function simulate_same_background(τ)
+# ╔═╡ a604bbb6-214f-4555-9465-5befbc8affc2
+function simulate_same_background(Δt)
 	# x1: mut 1 without mut 2
 	# x2: mut 1 and mut 2
 	# the sum is the total mut 1
 	params = (α = α,)
 	
 	# first part of the solution [0, τ]
-	u0 = u0 = [(1-x_init), x_init, 0, 0., ϕ1, 0]
-	tspan_1 = (0., τ)
+	u0 = u0 = [(1-x_init), x_init, 0, 0., ϕ, 0]
+	tspan_1 = (0., Δt)
 	sol_1 = solve(ODEProblem(expsel_same!, u0, tspan_1, params))
 	
 	# second part [τ, tmax]
-	ϕ1_τ = sol_1(τ)[5]
-	ϕ2_τ = ϕ2 + ϕ1_τ # initial fitness + that of first mutation
-	x1_τ = sol_1(τ)[2] - x_init # x1 at tau, minus the double mutant
-	u0 = u0 = [(1-x1_τ - x_init), x1_τ, x_init, 0., ϕ1_τ, ϕ2_τ]
-	tspan_2 = (0, 100/min(ϕ1, ϕ2))
+	ϕ1_Δt = sol_1(Δt)[5]
+	ϕ2_Δt = ϕ + ϕ1_Δt # initial fitness + that of first mutation
+	x1_Δt = sol_1(Δt)[2] - x_init # x1 at tau, minus the double mutant
+	u0 = u0 = [(1-x1_Δt - x_init), x1_Δt, x_init, 0., ϕ1_Δt, ϕ2_Δt]
+	tspan_2 = (0, 100/ϕ)
 	sol_2 = solve(ODEProblem(expsel_same!, u0, tspan_2, params))
 	
 	tvals = @chain vcat(tspan_1..., tspan_2...) extrema range(_..., length=1000)
-	x1 = map(t -> t < τ ? sol_1(t)[2] : sol_2(t-τ)[2], tvals)
-	x2 = map(t -> t < τ ? sol_1(t)[3] : sol_2(t-τ)[3], tvals)
+	x1 = map(t -> t < Δt ? sol_1(t)[2] : sol_2(t-Δt)[2], tvals)
+	x2 = map(t -> t < Δt ? sol_1(t)[3] : sol_2(t-Δt)[3], tvals)
 	return tvals, x1+x2, x2 
 end
 
-# ╔═╡ 86b2eb9c-85a3-4cc1-b6a8-689257c2f446
+# ╔═╡ 2ce83257-fcdd-4d7f-a4fc-a0da1b4bcc07
 let
-	τ1 = log(β1/x1_0)/ϕ1 |> round
 	plot(
 		ylim = (-0.01, 1.01),
-		title = "Same backgrounds \n Delay (scaled): $(round(τ/τ1, sigdigits=2))",
+		title = "Same backgrounds \n Delay (scaled): $(round(Δt, sigdigits=2))",
 		size = (600, 600),
 		ylabel = "frequency",
 		xlabel = "time (scaled)",
@@ -347,56 +315,131 @@ let
 		legend = :right,
 	)
 	
-	tvals, x1, x2 = simulate_same_background(τ)
-	plot!(tvals/time_scale, x1, line = (2), label = "first mut.")
-	plot!(tvals/time_scale, x2, line = (2), label = "second mut.")
-	plot!(tvals/time_scale, x1 - x2, line = (2, :dash), color=1, label = "first without second")
+	tvals, x1, x2 = simulate_same_background(Δt * τ)
+	plot!(tvals/τ, x1, line = (2), label = "first mut.")
+	plot!(tvals/τ, x2, line = (2), label = "second mut.")
+	plot!(tvals/τ, x1 - x2, line = (2, :dash), color=1, label = "first without second")
 
-	hline!([β1], label="β", line = (:black))
-	hline!([β1*(1-β2) + β2], label = "β(1-β) + β", line = (:black, :dash))
+	hline!([β], label="β", line = (:black))
+	hline!([β*(1-β) + β], label = "2βe = β(1-β) + β", line = (:black, :dash))
 end
 
-# ╔═╡ dcb370e1-cba1-462f-be0a-36bb7aa59bfd
-let
-	tvals, x1_same, x2_same = simulate_same_background(τ)
-	tvals, x1_diff, x2_diff = simulate_diff_background(τ)
-
-	p_same = @chain begin
-		findfirst(>(τ), tvals) # index of τ
-		x1_diff[_]
+# ╔═╡ c98712bb-30ea-4770-9817-1bc1ceae25d1
+plt_same = let
+	max_val, final_val = @chain begin
+		map(Δt_vals) do dt
+			_, x1, _ = simulate_same_background(dt)
+			maximum(x1), x1[end]
+		end
+		[x[1] for x in _], [x[2] for x in _]
 	end
 
-	x1_mean = p_same * x1_same + (1-p_same) * x1_diff
+	p = plot(
+		# legend = :right,
+		xscale = :linear,
+		xlabel = "delay (scaled)",
+		title = "Separate backgrounds \n max/final value of first mut.",
+		ylim = (.025, 1.025),
+	)
+	
+	plot!(Δt_vals/τ, max_val, label="max", linewidth=2)
+	plot!(Δt_vals/τ, final_val, label = "final", linewidth=2)
+	
+	hline!([2*βe], label = "2βe", line  = (:black, :dashdot))
+end
 
+# ╔═╡ ec7610c2-0e2e-4462-9602-fe9f21eb6afe
+function expsel_diff!(du, u, p, t)
+	# u[1:2:L] are the frequencies
+	# u[(L+1):end] are the fitnesses
+	mf = mean_fitness(u)
+	L = div(length(u), 2)
+	for i in 1:L
+		du[i] = (u[L+i] - mf) * u[i]
+		du[L+i] = -p.α * u[i] * u[L+i]
+	end
+	return nothing
+end
+
+# ╔═╡ 8e8acf2a-2c74-4b6b-95e7-da3ff6fb0f7b
+function simulate_diff_background(Δt)
+	params = (α = α,)
+	# first part of the solution [0, Δt]
+	u0 = u0 = [(1-x_init), x_init, 0, 0., ϕ, 0]
+	tspan_1 = (0., Δt)
+	sol_1 = solve(ODEProblem(expsel_diff!, u0, tspan_1, params))
+	
+	# second part [Δt, tmax]
+	ϕ1_Δt = sol_1(Δt)[5]
+	x1_Δt = sol_1(Δt)[2]
+	u0 = u0 = [(1- x1_Δt - x_init), x1_Δt, x_init, 0., ϕ1_Δt, ϕ]
+	tspan_2 = (0, 100/ϕ)
+	sol_2 = solve(ODEProblem(expsel_diff!, u0, tspan_2, params))
+	
+	tvals = @chain vcat(tspan_1..., tspan_2...) extrema range(_..., length=1000)
+	x1 = map(t -> t < Δt ? sol_1(t)[2] : sol_2(t-Δt)[2], tvals)
+	x2 = map(t -> t < Δt ? sol_1(t)[3] : sol_2(t-Δt)[3], tvals)
+	return tvals, x1, x2 
+end
+
+# ╔═╡ 46ed93e6-9390-481c-81c3-cce5cc2d3060
+let
 	plot(
 		ylim = (-0.01, 1.01),
-		title = "Delay (scaled): $(round(τ/time_scale, sigdigits=2))",
+		title = "Different backgrounds \n Delay (scaled): $(round(Δt, sigdigits=2))",
 		size = (600, 600),
 		ylabel = "frequency",
 		xlabel = "time (scaled)",
-		frame = :box,
-		legend = :bottomright,
+		frame = :box
 	)
 	
-	plot!(tvals/time_scale, x1_mean, line = (2, :blue), label = "first mut. (mean)")
-	plot!(tvals/time_scale, x1_diff, line = (2, :dashdot), color=1, label = "diff backgrounds")
-	plot!(tvals/time_scale, x1_same, line = (2, :dash), color=1, label = "same backgrounds")
+	tvals, x1, x2 = simulate_diff_background(Δt * τ)
+	plot!(tvals / τ, x1, line = (2), label = "first sweep")
+	plot!(tvals / τ, x2, line = (2), label = "second sweep")
 
-	# vline!([τ], line=(:black, :dash), label = "")
-	hline!([β1], line=(:black), label = "β")
-	hline!([β1*(1-β2)], line=(:black, :dash), label = "β(1-β)")
-	hline!([βe], line=(:black, :dashdot), label = "")
-	# vline!([time_for_sweep])
-	# plot!(tvals, x2, line = (2), color=2, label = "second mut.")
+	hline!([β], label="β", line = (:black))
+	hline!([β*(1-β)], label = "β(1-β)", line = (:black, :dash))
+	hline!([βe], label = "βe", line  = (:black, :dashdot))
 end
 
-# ╔═╡ 5a48c030-9136-4137-bac9-89b0253ca7ac
-function average_max_final(τ)
-	tvals, x1_same, x2_same = simulate_same_background(τ)
-	tvals, x1_diff, x2_diff = simulate_diff_background(τ)
+# ╔═╡ 183e778f-0358-4303-a192-6207fab58ada
+plt_diff = let
+	max_val, final_val = @chain begin
+		map(Δt_vals) do dt
+			_, x1, _ = simulate_diff_background(dt)
+			maximum(x1), x1[end]
+		end
+		[x[1] for x in _], [x[2] for x in _]
+	end
+
+	p = plot(
+		# legend = :right,
+		xscale = :linear,
+		xlabel = "delay (scaled)",
+		title = "Separate backgrounds \n max/final value of first mut.",
+		ylim = (-0.025, 1.025),
+	)
+	
+	plot!(Δt_vals/τ, max_val, label="max", linewidth=2)
+	plot!(Δt_vals/τ, final_val, label = "final", linewidth=2)
+	
+	hline!([β], label="β", line = (:black))
+	hline!([β*(1-β)], label = "β(1-β)", line = (:black, :dash))
+	hline!([βe], label = "βe", line  = (:black, :dashdot))
+end
+
+# ╔═╡ ea8fc36f-4c9f-46cf-a211-7f927503f71e
+let
+	plot(plt_diff, plt_same, layout = (1,2), size = (900,450), margin=5mm)
+end
+
+# ╔═╡ 563262bb-f2cf-4270-9470-6d85a9b8eca2
+function average_max_final(Δt)
+	tvals, x1_same, x2_same = simulate_same_background(Δt)
+	tvals, x1_diff, x2_diff = simulate_diff_background(Δt)
 
 	p_same = @chain begin
-		findfirst(>(τ), tvals) # index of τ
+		findfirst(>(Δt), tvals) # index of Δt
 		isnothing(_) ? x1_diff[end] : x1_diff[_]
 	end
 
@@ -405,10 +448,10 @@ function average_max_final(τ)
 	return maximum(x1_mean), x1_mean[end]
 end
 
-# ╔═╡ 2b44dc91-1737-4410-a922-fd6c81a171a5
+# ╔═╡ 94ac6f56-1415-4cb6-9673-0fc37e919640
 let
 	max_val, final_val = @chain begin
-		map(average_max_final, τvals)
+		map(average_max_final, Δt_vals)
 		[x[1] for x in _], [x[2] for x in _]
 	end
 
@@ -422,95 +465,13 @@ let
 		frame = :box,
 	)
 	
-	plot!(τvals / time_scale, max_val, color = :red, line = (2), label="max")
-	plot!(τvals / time_scale, final_val, color = :blue, line = (2), label = "final")
+	plot!(Δt_vals / τ, max_val, color = :red, line = (2), label="max")
+	plot!(Δt_vals / τ, final_val, color = :blue, line = (2), label = "final")
 	
-	hline!([β1], label="β", line = (:black))
-	hline!([β1*(1-β2)], label = "β(1-β)", line = (:black, :dash))
+	hline!([β], label="β", line = (:black))
+	hline!([β*(1-β)], label = "β(1-β)", line = (:black, :dash))
 	hline!([βe], label="βe", line=(:black, :dashdot))
-	
-
-	# vline!([log(β1/x1_0)/ϕ1], line=(:black), label="")
 end
-
-# ╔═╡ 7653b2da-f1aa-474c-a5b3-668a16ec8479
-function distribution_max_final_value(ρ)
-	M = 500 # samples
-	ρ_dist = Exponential(ρ)
-	delays = 1 ./rand(ρ_dist, M) # sampled values of delay
-	
-	max_val, final_val = @chain begin # solving the ODE for this delay
-		map(average_max_final, delays)
-		[x[1] for x in _], [x[2] for x in _]
-	end
-	
-	return max_val, final_val # vector of final values for the different delays
-end
-
-# ╔═╡ bf55661e-fd80-4356-98d4-f9e970caf8b8
-plots_distribution_final_value, final_values = let
-	max_values, final_values = let
-		X = map(distribution_max_final_value, ρvals)
-		[x[1] for x in X], [x[2] for x in X]
-	end
-	plots = map(zip(ρvals, final_values)) do (ρ, βeff)
-		edges = 0:0.025:1
-		edge_centers = (edges[1:end-1] + edges[2:end])/2
-		hist = fit(Histogram, βeff, edges)
-	
-		p = plot(
-			xlabel = "β",
-			# ylabel = "counts",
-			title = "Time for sweep: $(round(time_for_sweep)) - 1/ρ: $(round(1/ρ))",
-			size = (600, 500),
-			frame = :box,
-		)
-		
-		vline!([β1], line = (:black), label = "β", alpha=0.8)
-		vline!([β1*(1-β1)], line = (:black, :dash), label = "β(1-β)", alpha=0.8)
-		vline!([βe], line = (:black, :dashdot), label = "βe", alpha=0.8)
-	
-		plot!(edge_centers, hist.weights, label="", color=1)
-	end
-	plots, final_values
-end
-
-# ╔═╡ 236d893d-0af3-4031-a401-0f0b5877741d
-final_values
-
-# ╔═╡ 3e0ca68c-2947-429a-8704-c33a266b46cf
-plot(
-	plots_distribution_final_value...,
-	layout = (3,3), margin = 5mm, size = (1200, 1200), linewidth=3,
-)
-
-# ╔═╡ a8242ed5-fa64-4cbc-a60e-fb2da5364a67
-final_values
-
-# ╔═╡ c2e1aa8d-1ed2-46ac-809a-12ebedcc0b5a
-let
-	av_final_values = map(mean, final_values)
-	p = plot(
-		ylim = (0,1),
-		xlabel = "ρ",
-		ylabel = "av. final value",
-		frame=:box,
-	)
-	plot!(ρvals, av_final_values, label = "numerical", line = (2))
-
-	approx = map(ρvals) do ρ
-		q = exp(-ρ*time_for_sweep/2)
-		βeff = (β1*(1-β1) + βe)/2
-		βeff = βe
-		(1-q) * βeff + q * β1
-	end
-	plot!(ρvals, approx, line=(2), label="approximation")
-	hline!([β1], line=(:black), label = "β")
-	hline!([βe], line = (:black, :dashdot), label = "βe")
-end
-
-# ╔═╡ 04c4b765-f158-4c5a-a938-f8be43eac483
-av_final_values = map(mean, final_values)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -527,7 +488,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 Chain = "~0.5.0"
 DifferentialEquations = "~7.8.0"
-Distributions = "~0.25.96"
+Distributions = "~0.25.97"
 Measures = "~0.3.2"
 Plots = "~1.38.16"
 PlutoUI = "~0.7.51"
@@ -540,12 +501,12 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "b528d44a8270983bd146f481091501dd0e5f09ec"
+project_hash = "38fd76217a54c6038139bbd30ad8fd51e889cc5b"
 
 [[deps.ADTypes]]
-git-tree-sha1 = "dcfdf328328f2645531c4ddebf841228aef74130"
+git-tree-sha1 = "e58c18d2312749847a74f5be80bb0fa53da102bd"
 uuid = "47edcb42-4c32-4615-8424-f2b9edc5f35b"
-version = "0.1.3"
+version = "0.1.5"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -603,9 +564,9 @@ version = "0.1.29"
 
 [[deps.ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "1d9e98721e71dcf4db5a7d34f55d8aa07c43468f"
+git-tree-sha1 = "9e5ad0f651c1be8a355e4d327e9cb3bc135d1b73"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.0.6"
+version = "1.0.8"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -725,9 +686,9 @@ version = "0.3.0"
 
 [[deps.Compat]]
 deps = ["UUIDs"]
-git-tree-sha1 = "7a60c856b9fa189eb34f5f8a6f6b5529b7942957"
+git-tree-sha1 = "4e88377ae7ebeaf29a047aa1ee40826e0b708a5d"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "4.6.1"
+version = "4.7.0"
 weakdeps = ["Dates", "LinearAlgebra"]
 
     [deps.Compat.extensions]
@@ -803,9 +764,9 @@ version = "1.9.1"
 
 [[deps.DiffEqBase]]
 deps = ["ArrayInterface", "ChainRulesCore", "DataStructures", "DocStringExtensions", "EnumX", "FastBroadcast", "ForwardDiff", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "Parameters", "PreallocationTools", "Printf", "RecursiveArrayTools", "Reexport", "Requires", "SciMLBase", "SciMLOperators", "Setfield", "SparseArrays", "Static", "StaticArraysCore", "Statistics", "Tricks", "TruncatedStacktraces", "ZygoteRules"]
-git-tree-sha1 = "0a7dd11dd243a1f8c71f72f2e5fd54c0bfdeaaab"
+git-tree-sha1 = "62c41421bd0facc43dfe4e9776135fe21fd1e1b9"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.125.1"
+version = "6.126.0"
 
     [deps.DiffEqBase.extensions]
     DiffEqBaseDistributionsExt = "Distributions"
@@ -877,9 +838,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
 deps = ["FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns", "Test"]
-git-tree-sha1 = "4ed4a6df2548a72f66e03f3a285cd1f3b573035d"
+git-tree-sha1 = "db40d3aff76ea6a3619fdd15a8c78299221a2394"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.96"
+version = "0.25.97"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -910,6 +871,12 @@ version = "0.6.8"
 git-tree-sha1 = "bdb1942cd4c45e3c678fd11569d5cccd80976237"
 uuid = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
 version = "1.0.4"
+
+[[deps.ExceptionUnwrapping]]
+deps = ["Test"]
+git-tree-sha1 = "e90caa41f5a86296e014e148ee061bd6c3edec96"
+uuid = "460bff9d-24e4-43bc-9d9f-a8973cb893f4"
+version = "0.1.9"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -962,9 +929,9 @@ uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
-git-tree-sha1 = "e17cc4dc2d0b0b568e80d937de8ed8341822de67"
+git-tree-sha1 = "0b3b52afd0f87b0a3f5ada0466352d125c9db458"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "1.2.0"
+version = "1.2.1"
 
 [[deps.FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Requires", "Setfield", "SparseArrays"]
@@ -1097,10 +1064,10 @@ uuid = "42e2da0e-8278-4e71-bc24-59509adca0fe"
 version = "1.0.2"
 
 [[deps.HTTP]]
-deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "5e77dbf117412d4f164a464d610ee6050cc75272"
+deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
+git-tree-sha1 = "2613d054b0e18a3dea99ca1594e9a3960e025da4"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.9.6"
+version = "1.9.7"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
@@ -1392,9 +1359,9 @@ version = "1.0.0"
 
 [[deps.LoopVectorization]]
 deps = ["ArrayInterface", "ArrayInterfaceCore", "CPUSummary", "CloseOpenIntervals", "DocStringExtensions", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "PrecompileTools", "SIMDTypes", "SLEEFPirates", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
-git-tree-sha1 = "b6b453635656ea4b245d61d354516284d6fc1962"
+git-tree-sha1 = "e4eed22d70ac91d7a4bf9e0f6902383061d17105"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
-version = "0.12.160"
+version = "0.12.162"
 weakdeps = ["ChainRulesCore", "ForwardDiff", "SpecialFunctions"]
 
     [deps.LoopVectorization.extensions]
@@ -1565,9 +1532,9 @@ version = "0.12.3"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
-git-tree-sha1 = "5a6ab2f64388fd1175effdf73fe5933ef1e0bac0"
+git-tree-sha1 = "4b2e829ee66d4218e0cef22c0a64ee37cf258c29"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.7.0"
+version = "2.7.1"
 
 [[deps.Pipe]]
 git-tree-sha1 = "6842804e7867b115ca9de748a0cf6b364523c16d"
@@ -1805,15 +1772,15 @@ version = "1.93.0"
 
 [[deps.SciMLNLSolve]]
 deps = ["DiffEqBase", "LineSearches", "NLsolve", "Reexport", "SciMLBase"]
-git-tree-sha1 = "2d00015fa0a190220dc5605406b85073f6634391"
+git-tree-sha1 = "9dfc8e9e3d58c0c74f1a821c762b5349da13eccf"
 uuid = "e9a6253c-8580-4d32-9898-8661bb511710"
-version = "0.1.7"
+version = "0.1.8"
 
 [[deps.SciMLOperators]]
 deps = ["ArrayInterface", "DocStringExtensions", "Lazy", "LinearAlgebra", "Setfield", "SparseArrays", "StaticArraysCore", "Tricks"]
-git-tree-sha1 = "6a657a73322170eec86fb427661dbee079b85bff"
+git-tree-sha1 = "668ed6b2265d1adb36b7239501e9369025bd6c78"
 uuid = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
-version = "0.2.12"
+version = "0.3.2"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1847,9 +1814,9 @@ version = "1.1.0"
 
 [[deps.SimpleNonlinearSolve]]
 deps = ["ArrayInterface", "DiffEqBase", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "PrecompileTools", "Reexport", "Requires", "SciMLBase", "StaticArraysCore"]
-git-tree-sha1 = "7c55a3e65aad4ce6e610409cdd564b8d590b9726"
+git-tree-sha1 = "56aa73a93cdca493af5155a0338a864ed314222b"
 uuid = "727e6d20-b764-4bd8-a329-72de5adea6c7"
-version = "0.1.15"
+version = "0.1.16"
 
     [deps.SimpleNonlinearSolve.extensions]
     SimpleBatchedNonlinearSolveExt = "NNlib"
@@ -1907,9 +1874,9 @@ version = "0.3.9"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "ef28127915f4229c971eb43f3fc075dd3fe91880"
+git-tree-sha1 = "7beb031cf8145577fbccacd94b8a8f4ce78428d3"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.2.0"
+version = "2.3.0"
 weakdeps = ["ChainRulesCore"]
 
     [deps.SpecialFunctions.extensions]
@@ -2382,58 +2349,51 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═18f13b50-103d-11ee-2489-17399f00a9a5
-# ╠═6450af91-81c1-4fbf-bc53-3e2a13ecd350
-# ╟─802a5629-d0e7-4621-9627-a6dd74d9b01b
-# ╟─58a5165c-c5a9-429b-b994-77130101bcca
-# ╠═dc781979-1267-47e0-b758-967d6d600cbf
-# ╟─44abf4f8-cde3-48a9-8344-550b262abd0c
-# ╠═a6c60e3a-99ea-416d-9abc-3fea1e47fa6e
-# ╟─d2413398-3a9b-4a87-b8bf-e05e79c1a8dd
-# ╠═17f6460b-2e03-498d-9b9e-ef8e6716ef62
-# ╠═d13bf03c-f97d-48ab-90dd-6d32b5dbdbbe
-# ╟─6c9c8e3b-437a-4703-b0a7-45abcbb33c6e
-# ╠═93e8b330-3f2b-4a7c-9e9b-82960d894416
-# ╠═85fe3bd3-23ca-4b69-96f4-95c6c1c86ace
-# ╟─06ec2edc-495e-4dd8-b2b2-69cc228210cc
-# ╟─13658da8-5369-4888-a0d2-d030a97695b5
-# ╟─5e6e8074-654e-44ab-9d07-6bcc4d6515ca
-# ╠═53d05119-2527-406d-8ac0-7ec96ac49939
-# ╠═312bf656-d11f-458c-a3aa-ae815603f6b1
-# ╠═7b811e87-7cd2-460b-8ee0-46d8e8fc2814
-# ╟─9cfc45db-aa2e-480c-928e-229a292d7d78
-# ╟─c6e0070b-646b-4506-b9ef-a85796323966
-# ╟─86b2eb9c-85a3-4cc1-b6a8-689257c2f446
-# ╟─376626ba-d5df-4821-8d17-071267d639a8
-# ╟─b3d79980-e813-4d1d-a125-ab6226fd1ae6
-# ╠═2192bd62-e6ab-4092-b341-c1e6a1a4f463
-# ╟─dcb370e1-cba1-462f-be0a-36bb7aa59bfd
-# ╟─9ee205ac-6ffb-4556-9777-e66267ecdbf5
-# ╠═5a48c030-9136-4137-bac9-89b0253ca7ac
-# ╠═2b44dc91-1737-4410-a922-fd6c81a171a5
-# ╟─a4fb40d0-71c3-4afc-950e-f7170395d277
-# ╟─e9708a27-a901-4629-a05b-32c240407509
-# ╠═7653b2da-f1aa-474c-a5b3-668a16ec8479
-# ╠═50819d96-439a-45ab-a530-fc774c6abc8d
-# ╠═236d893d-0af3-4031-a401-0f0b5877741d
-# ╠═bf55661e-fd80-4356-98d4-f9e970caf8b8
-# ╠═3e0ca68c-2947-429a-8704-c33a266b46cf
-# ╠═a8242ed5-fa64-4cbc-a60e-fb2da5364a67
-# ╟─c2e1aa8d-1ed2-46ac-809a-12ebedcc0b5a
-# ╠═cdff9662-a6ac-4fed-bb06-62595100ce2a
-# ╠═04c4b765-f158-4c5a-a938-f8be43eac483
-# ╠═17fae642-99bb-4163-ba90-091f0994fd59
-# ╟─e0c507dc-c991-4afb-bd38-927a4cb4f846
-# ╠═1730d195-c4a7-4a5e-bd1d-0821a540f850
-# ╠═1b6b8d61-30b1-4222-98b5-ee4dd0c021ad
-# ╠═3754ddf9-2e92-412a-9062-d601e0689da0
-# ╠═ac69cfbf-e645-4f66-827e-835df3e2a03e
-# ╠═b524e772-9806-4038-8286-6c0fd265c1ce
-# ╟─a13f19b7-60b0-4e23-8fe8-330c6a9b7648
-# ╟─47554178-cedd-4839-8f2b-35bd9b709231
-# ╠═f74303aa-13bc-48cc-a84f-eb80b2d1d4c3
-# ╠═bd5f877e-2189-497b-bfd9-22bbd78fb759
-# ╠═8d3af15e-56d5-4c64-8cbc-3fdb2d5b1e9f
-# ╠═2e1459b7-70a8-4202-bd01-1db7aa08ee3f
+# ╠═91c46254-15c5-11ee-37ad-ad97c71c3bbb
+# ╠═78b73cb9-415a-42c6-921f-0ad465c058d6
+# ╟─f3fc225f-79d9-4d06-a704-e209a74d0081
+# ╟─6dc3b64a-65e7-4741-9f50-3179702ba04c
+# ╟─6a10ec11-3df2-476d-ba2a-2d3cd1ab4f38
+# ╠═064c7845-595a-48f1-8655-247d6b12768f
+# ╠═552e4943-5e4a-4ca2-8bd2-7cfdcc6fc74a
+# ╠═534fa42e-1260-4bc8-9ad9-32505f4836f8
+# ╟─e8f41eaf-a3c1-44b5-b35a-dbd95c062d76
+# ╟─1649f5d2-fc15-4952-b88d-776f9b71a1fb
+# ╟─b809b722-f29d-48c3-84d5-0d5e4e8a1441
+# ╟─413f8b62-738d-4b80-ba97-11688890c025
+# ╟─4c50ba3b-4f69-423f-aa71-cc67a228b925
+# ╟─c751c0af-4775-4039-86ea-ab5f0a835c03
+# ╟─85278ecc-6e5e-47df-a5ea-5d19f3015782
+# ╟─105ec0bf-a351-4724-b1cc-003d6eecc1b8
+# ╟─d76403df-37c6-43ad-9376-f18654b49478
+# ╟─46ed93e6-9390-481c-81c3-cce5cc2d3060
+# ╟─a88615d7-3154-403c-82a6-6348b233a796
+# ╟─67854611-8e03-4988-a6a6-69000fc09231
+# ╟─183e778f-0358-4303-a192-6207fab58ada
+# ╟─af54e29f-669a-4d3c-83da-6fee17119e82
+# ╟─cd4f1fc8-6002-44d1-a467-fda6a59dfa47
+# ╟─3c398e26-7a2a-4b15-b743-071d3e58d3b7
+# ╟─34b9ffc5-b276-4be7-99a6-cb3f4a4bae32
+# ╟─edf04116-f22a-4683-b3cb-c09863ba976d
+# ╟─7d298fe2-9a99-489f-a0eb-bfabd052bd79
+# ╟─3df15166-f925-40b4-9d3f-e212c55ec406
+# ╟─2ce83257-fcdd-4d7f-a4fc-a0da1b4bcc07
+# ╟─b325c3e7-8e76-4c42-8e0a-bedbfe7308ec
+# ╟─c98712bb-30ea-4770-9817-1bc1ceae25d1
+# ╟─f6d92a0e-f0e9-4790-ac9f-89e700109c2b
+# ╟─b0877a57-a0af-4484-82c9-70fc01e72948
+# ╟─ea8fc36f-4c9f-46cf-a211-7f927503f71e
+# ╟─1c8cf0b2-62e0-4ec9-a405-43988b6fee69
+# ╟─94ac6f56-1415-4cb6-9673-0fc37e919640
+# ╟─b455e57d-3faf-425b-bb7e-55c3e187fef8
+# ╟─6228e8d6-f5f6-4df1-9a15-a8d6b9e5d65e
+# ╠═b4f87b41-7a8e-48fb-8fc1-9965f2a5ba1f
+# ╟─e8b54c8f-0274-4ff3-b0f5-39bead05c7df
+# ╠═a604bbb6-214f-4555-9465-5befbc8affc2
+# ╠═e4421869-5c5c-42ad-bbd9-69f6065d167f
+# ╠═8e8acf2a-2c74-4b6b-95e7-da3ff6fb0f7b
+# ╠═ec7610c2-0e2e-4462-9602-fe9f21eb6afe
+# ╠═0096a0ed-73b6-4b20-ac12-f95f5d8d217a
+# ╠═563262bb-f2cf-4270-9470-6d85a9b8eca2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

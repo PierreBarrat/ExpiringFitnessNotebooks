@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.36
 
 using Markdown
 using InteractiveUtils
@@ -43,20 +43,18 @@ function log_range(low, high, length)
 	exp.(range(log(low), log(high); length))
 end
 
-# ╔═╡ 287520e8-97a3-485b-9634-fd2db7a2f4e6
+# ╔═╡ d42e08dd-198d-4b85-93fd-d9e522279b56
 begin
 	local _Ms = @bind M Slider([1,2,3,4,5,10,20], show_value=true, default=2)
-	local c_values = vcat([0], log_range(1/M*1e-3, 1/M, 10))
-	local _Cs = @bind c Slider(c_values, show_value=true, default = 0.)
 	Ms = md"M = $(_Ms)"
+end
+
+# ╔═╡ 6459a142-ece5-4ad4-946e-708b684993c9
+begin
+	local c_values = vcat([0], log_range(1/M*1e-3, 1/M, 10))
+	local _Cs = @bind c Slider(c_values, show_value=true, default = c_values[end])
 	Cs = md"c = $(_Cs)"
-end;
-
-# ╔═╡ b3f03e99-9550-4b01-bda1-b7f9f6617c7d
-Ms
-
-# ╔═╡ b14f025b-e95f-42fb-a321-4d914f6072ba
-Cs
+end
 
 # ╔═╡ f431ba40-9742-4898-92f0-33c3b8e12a1c
 params = let
@@ -77,8 +75,8 @@ md"Cross immunity matrix for the special region $i=1$."
 
 # ╔═╡ c4da46f5-8178-4ae5-b865-db025a365da0
 K_special = begin
-	b_special = .8
-	f_special = .6
+	b_special = .7
+	f_special = .8
 	[1 b_special; f_special 1]
 end
 
@@ -87,13 +85,17 @@ md"Cross immunity matrix for other regions $i>1$."
 
 # ╔═╡ 78b03821-37d4-4a9d-8ff0-349e12f66686
 K0 = begin
-	b = .95
-	f = .95
+	x = .97
+	b = x
+	f = x
 	[1 b; f 1]
 end
 
-# ╔═╡ 95efa1bd-8fe2-41f1-ba13-839a670cd86e
+# ╔═╡ b3f03e99-9550-4b01-bda1-b7f9f6617c7d
+Ms
 
+# ╔═╡ b14f025b-e95f-42fb-a321-4d914f6072ba
+Cs
 
 # ╔═╡ b7dd719a-118e-4809-84da-609735534835
 md"""
@@ -166,8 +168,8 @@ f_av = let
 	(1 - f_av)/(2 - f_av - b_av)
 end
 
-# ╔═╡ 87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
-p_freq = let
+# ╔═╡ 95efa1bd-8fe2-41f1-ba13-839a670cd86e
+let
 	# freq. plot
 	tvals = range(sol.tspan..., length=100)
 	f_R1 = PSS.frequency(sol, tvals, 1, 2)
@@ -187,13 +189,52 @@ p_freq = let
 	plot!(tvals, f_R1, label="Region 1", linewidth=lw)
 	plot!(tvals, f_R2, label="Other regions", linewidth=lw)
 	plot!(tvals, f_R, label="Overall", linewidth=lw)
-	hline!(
-		[(1-f_special)/(2-b_special-f_special)]; 
-		label="", line=(:black, lw+2, 0.3)
-	)
+	# hline!(
+	# 	[(1-f_special)/(2-b_special-f_special)]; 
+	# 	label="", line=(:black, lw+2, 0.3)
+	# )
 	hline!([f_av], label="", line=(:black))
 	p
 end
+
+# ╔═╡ 87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
+p_freq = let
+	# freq. plot
+	tvals = range(sol.tspan..., length=100)
+	# f_R1 = PSS.frequency(sol, tvals, 1, 2)
+	# f_R2 = PSS.frequency(sol, tvals, 2, 2)
+	f_R = PSS.frequency(sol, tvals, 2)
+
+	lw = 2
+
+	p = plot(
+		legend = :bottomright,
+		xlabel = "Time",
+		ylabel = "",
+		title = "Mutant frequency",
+		ylim = (-0.03, 1.03),
+		frame=:box
+	)
+	
+	# plot!(tvals, f_R1, label="Region 1", linewidth=lw)
+	# plot!(tvals, f_R2, label="Other regions", linewidth=lw)
+	plot!(tvals, f_R, label="", linewidth=lw)
+	# hline!(
+	# 	[(1-f_special)/(2-b_special-f_special)]; 
+	# 	label="", line=(:black, lw+2, 0.3)
+	# )
+	hline!([f_av], label="", line=(:black))
+
+	savefig("/home/pierrebc/Documents/BaleLabo/Slides/LJP_2023/mfreq_M10.png")
+	
+	p
+end
+
+# ╔═╡ 377398c1-fa28-476c-9328-5ea26fadbb7e
+Ms
+
+# ╔═╡ 399b3907-a990-409d-8147-de87f52b5c37
+Cs
 
 # ╔═╡ add14358-6d60-47a5-876f-8e0651781c57
 pS = let
@@ -206,13 +247,16 @@ pS = let
 	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
 	
 	p = plot(
-		title="Susceptibles (all regions)", 
+		title="Susceptibles (all groups)", 
 		xlabel="Time",
 		legend=:topright,
+		frame=:box,
 	)
 	plot!(tvals, X_wt, label="w.t.", linewidth = lw)
 	plot!(tvals, X_m, label="Mutant", linewidth = lw)
 	hline!([δ/α], line=(lw+2, :black, 0.3), label="")
+
+	savefig("/home/pierrebc/Documents/BaleLabo/Slides/LJP_2023/S_M10.png")
 
 	p
 end
@@ -227,14 +271,23 @@ pI = let
 	X_m = map(t -> mean(sol[t, 1:M, 2, g]), tvals)
 	
 	p = plot(
-		title="Infectious (all regions)", 
+		title="Infectious (all groups)", 
 		xlabel="Time",
 		legend=:topright,
+		frame=:box,
 	)
 	plot!(tvals, X_wt, label="w.t.", linewidth = lw)
 	plot!(tvals, X_m, label="Mutant", linewidth = lw)
 
+	savefig("/home/pierrebc/Documents/BaleLabo/Slides/LJP_2023/I_M10.png")
+	
 	p
+end
+
+# ╔═╡ 2a1c18b3-587c-47d6-9def-1794fa2e9889
+let
+	plot(pS, pI, layout=(1,2))
+	savefig("/home/pierrebc/Documents/BaleLabo/Slides/LJP_2023/SI_M10.png")
 end
 
 # ╔═╡ Cell order:
@@ -242,9 +295,8 @@ end
 # ╟─db663438-8523-47ac-a783-88ff59a7ab1d
 # ╟─c6c407d9-fea7-4e79-97ff-6acb88f4356d
 # ╠═c79fe879-a32a-4391-8df1-5b9d9eeb75f5
-# ╠═287520e8-97a3-485b-9634-fd2db7a2f4e6
-# ╠═b3f03e99-9550-4b01-bda1-b7f9f6617c7d
-# ╠═b14f025b-e95f-42fb-a321-4d914f6072ba
+# ╠═d42e08dd-198d-4b85-93fd-d9e522279b56
+# ╠═6459a142-ece5-4ad4-946e-708b684993c9
 # ╠═f431ba40-9742-4898-92f0-33c3b8e12a1c
 # ╠═e38f872f-f9ec-45cf-953c-42a18aa0bab3
 # ╠═c2a159f4-cd25-4525-a270-2b3065a0dc0e
@@ -252,6 +304,8 @@ end
 # ╠═c4da46f5-8178-4ae5-b865-db025a365da0
 # ╟─81cbea6e-9a97-4e7e-9528-f0830c7ae58f
 # ╠═78b03821-37d4-4a9d-8ff0-349e12f66686
+# ╠═b3f03e99-9550-4b01-bda1-b7f9f6617c7d
+# ╠═b14f025b-e95f-42fb-a321-4d914f6072ba
 # ╠═95efa1bd-8fe2-41f1-ba13-839a670cd86e
 # ╟─b7dd719a-118e-4809-84da-609735534835
 # ╠═a62f2142-7d76-4a15-9566-54115aa98e08
@@ -267,5 +321,8 @@ end
 # ╠═d17bc99f-f5cb-49c5-bfe1-e9219b64d19d
 # ╠═8e17f448-7e6c-493c-b099-1f639a56a575
 # ╠═87ffd6f9-3b88-46ba-a2a1-a67c67043aa0
-# ╟─add14358-6d60-47a5-876f-8e0651781c57
-# ╟─2e5f1f19-d5f2-4e54-8337-49db178b13c9
+# ╠═377398c1-fa28-476c-9328-5ea26fadbb7e
+# ╠═399b3907-a990-409d-8147-de87f52b5c37
+# ╠═add14358-6d60-47a5-876f-8e0651781c57
+# ╠═2e5f1f19-d5f2-4e54-8337-49db178b13c9
+# ╠═2a1c18b3-587c-47d6-9def-1794fa2e9889

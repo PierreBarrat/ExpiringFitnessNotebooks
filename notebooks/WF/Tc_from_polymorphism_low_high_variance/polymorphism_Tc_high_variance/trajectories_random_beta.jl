@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.26
+# v0.19.30
 
 using Markdown
 using InteractiveUtils
@@ -34,9 +34,7 @@ mkpath(savedir)
 begin
 	mβvals = 0.3:0.3:0.9 |> collect
 	β2vals = map(mβvals) do m
-		r = range(m^2*1.00001, m*0.99, length=2)
-		L = div(length(r), 2)
-		r[1:L]
+        [m^2 + (m - m^2)/3]
 	end
 
 	βvals = reverse([(mβ=m, β2=v) for (j, m) in enumerate(mβvals) for v in β2vals[j]])
@@ -51,18 +49,6 @@ md"## Writing to files"
 
 # ╔═╡ 3ad99196-c1f4-4153-8c37-9b5f8db3bd39
 md"# Functions"
-
-# ╔═╡ f77e8aa9-7843-4917-a745-0fa3e6611939
-"""
-	get_β_distribution(mβ, β2)
-
-Return a Beta distribution with mean `mβ` and second moment `β2`.
-"""
-function get_β_distribution(mβ, β2)
-	b = (mβ - β2)/(β2 - mβ^2)*(1-mβ)
-	a = mβ/(1-mβ)*b
-	return Beta(a,b)
-end
 
 # ╔═╡ b7d9a8d0-476d-4d87-acd8-a06c7766198b
 begin
@@ -117,6 +103,22 @@ parameters = map(Iterators.product(βvals, ρvals)) do (βv, ρ)
 	(mβ = βv.mβ, β2 = βv.β2, ρ=ρ, μ_neutral = get_μ_neutral(ρ, βv.β2), T = T, Δt = Δt)
 end |> x -> vcat(x...)
 
+# ╔═╡ cb6caaf7-1088-49ff-afcd-b33cba0107ee
+diversity = let
+	div = Dict()
+	for (i, p) in enumerate(parameters)
+		@info p i/length(parameters)
+		@time diversity = simulate(p.mβ, p.β2, p.ρ, p.μ_neutral; p.Δt, p.T)
+		# diversity
+		df = DataFrame()
+		for x in diversity
+			push!(df, x)
+		end
+		div[p] = df
+	end
+	div
+end;
+
 # ╔═╡ bbb24ac7-d514-4343-8c07-5f017ce45e0b
 function simulate(
     mβ, β2, ρ, μ_neutral;
@@ -170,22 +172,6 @@ function simulate(
 
     return diversity
 end
-
-# ╔═╡ cb6caaf7-1088-49ff-afcd-b33cba0107ee
-diversity = let
-	div = Dict()
-	for (i, p) in enumerate(parameters)
-		@info p i/length(parameters)
-		@time diversity = simulate(p.mβ, p.β2, p.ρ, p.μ_neutral; p.Δt, p.T)
-		# diversity
-		df = DataFrame()
-		for x in diversity
-			push!(df, x)
-		end
-		div[p] = df
-	end
-	div
-end;
 
 # ╔═╡ 96f68927-a67c-46be-98e4-e0343db40c3d
 filenames = map(enumerate(collect(keys(diversity)))) do (idx, p)
@@ -243,6 +229,18 @@ end
 let
 	B = FitnessDistribution(0.3, 0.12, 0.5)
 	rand(B)
+end
+
+# ╔═╡ f77e8aa9-7843-4917-a745-0fa3e6611939
+"""
+	get_β_distribution(mβ, β2)
+
+Return a Beta distribution with mean `mβ` and second moment `β2`.
+"""
+function get_β_distribution(mβ, β2)
+	b = (mβ - β2)/(β2 - mβ^2)*(1-mβ)
+	a = mβ/(1-mβ)*b
+	return Beta(a,b)
 end
 
 # ╔═╡ caa421a1-a3d2-4e13-af68-27bc08229c5a

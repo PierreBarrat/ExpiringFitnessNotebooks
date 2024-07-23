@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.32
+# v0.19.25
 
 using Markdown
 using InteractiveUtils
@@ -16,10 +16,10 @@ begin
 	using StatsBase
 end
 
+# ╔═╡ 19759f0e-ced3-11ed-2b40-8b01992454e2
+notebook_name = replace(@__FILE__, r"\.jl#==#.*" => "") |> basename
+
 # ╔═╡ 6cf21eab-ddb6-4c91-9e6a-d925d61702c2
-
-
-# ╔═╡ 9e201d74-9e35-46a1-ad42-716630168318
 
 
 # ╔═╡ 0ed067a4-3780-432b-bd54-9d52a22f2bbf
@@ -29,6 +29,35 @@ begin
 	μ = 0
 	md"**Constants**"
 end
+
+# ╔═╡ c7909693-203b-49a8-8713-387dc287e4a2
+md"""
+The duration of a trajectory should be of order $T \simeq 1/(\rho\langle\beta^2\rangle)$. The number of partial sweeps happening during this time is $1/\langle\beta^2\rangle$. For this reason we expect to always have a supply of mutations if $L \gg 1/\langle\beta^2\rangle$. 
+"""
+
+# ╔═╡ a37e9a1e-e06f-4402-abf3-f82e22b63fe3
+md"""
+I will try the following: 
+- vary $\beta$ (constant) and $\rho$ to some set of values;
+- fix other parameters;
+
+and try to see whether the supply of mutation runs out in each case. 
+
+For a given $\beta$ and $\rho$, the simulation time should be $\gg 1/\rho/\beta^2$.
+"""
+
+# ╔═╡ afe7bf04-d998-46fc-afed-8e2cd21361d2
+begin
+	svals = [0.01, 0.1, 0.3]
+	ρvals = [1/4, 1/12, 1/24, 1/52]
+	Δtvals = [1, 3, 10, 30]
+	md"**Variable parameters**"
+end
+
+# ╔═╡ 1110d7fa-9c96-4b40-ae60-2396a08d4db0
+parameters = map(Iterators.product(Δtvals, ρvals, svals)) do (Δt, ρ, s)
+	(s=s, ρ=ρ, Δt=Δt)
+end |> (x -> vcat(x...));
 
 # ╔═╡ c75346e5-181b-437d-9210-163cd6fdd995
 s = 0.3
@@ -42,25 +71,6 @@ md"## High fitness effect, high sweep rate"
 # ╔═╡ 9009ba2e-1661-4ede-b01a-e29a71763e71
 md"""
 Why do trajectories become less predictible when the sampling time $\Delta t$ becomes larger? Let's choose one frequency bin and look at all rising trajectories entering this bin. 
-I then plot two things: 
-1. the average fitness of trajectories at the point where they enter the bin. 
-2. for all trajectories entering the bin, the number that will go up at the next time point vs the number that will go down. 
-"""
-
-# ╔═╡ 86ff1f8d-b2e3-4a26-9e99-234cc4bfc38c
-always_below = false
-
-# ╔═╡ d82545fc-e789-4be5-a4f2-29354bf67244
-md"""
-The fitness of trajectories w.r. to the mean fitness of the population decreases as $\Delta t$ increases. This is expected as the very fit trajectories rise quickly, and are likely to not be seen in the bin for a high $\Delta t$. 
-Inversely, we see many low fitness trajectories for a high value of $\Delta t$.
-"""
-
-# ╔═╡ e2daf6a9-d4de-4c65-8285-fd3896b9ed66
-md"""
-Below the number of trajectories going up vs going down after the first time they're seen in the bin. At higher $\Delta t$: 
-- less go up, which is expected (fast growing ones are missed)
-- more go down! This is very likely due to the ones turning around at a value higher than the bin, and caught on the way down for a high $\Delta t$. They are counted as going up when $\Delta t=1$. 
 """
 
 # ╔═╡ e4943794-9de3-4564-967f-c71f29007965
@@ -85,7 +95,6 @@ begin
 				end
 			end
 			av_fit_mut /= Nmut
-			av_fit_mut - av_fit
 			av_fit_mut - av_fit
 		end
 	end
@@ -168,9 +177,9 @@ end
 
 # ╔═╡ 832fe8a7-038d-48ca-94e1-64cf83c360c5
 begin
-	Δt = 1
+	Δt = 20
 	T, div, st = simulate(s, ρ; Δt, T = 5000)
-	fb = FrequencyBin(0.5, 0.05)
+	fb = FrequencyBin(0.3, 0.05)
 	filter!(T, fb; always_below=true)
 
 	
@@ -182,10 +191,13 @@ begin
 	plot!(tvals, av_T, line=(:black, 3), label="")
 end
 
+# ╔═╡ d451785a-8b63-44da-8a84-82d6d24dd507
+map(x->x.final_state, T) |> unique
+
 # ╔═╡ a5410237-9acf-4b51-b1a2-3f76087ef60a
 function bin_stat(fb, Δt)
-	T, div, st = simulate(s, ρ; Δt, T = 25_000)
-	filter!(T, fb; always_below)
+	T, div, st = simulate(s, ρ; Δt, T = 5000)
+	filter!(T, fb; always_below=true)
 
 	fitness_values = map(T) do x
 		i = findfirst(==(x.time_at_bin[fb]), x.t)
@@ -194,12 +206,12 @@ function bin_stat(fb, Δt)
 
 	n_down = count(T) do x
 		i = findfirst(==(x.time_at_bin[fb]), x.t)
-		x.final_state != :missing && (x.f[i+1] < x.f[i])
+		!ismissing(x.final_state) && x.f[i+1] < x.f[i]
 	end
 
 	n_up = count(T) do x
 		i = findfirst(==(x.time_at_bin[fb]), x.t)
-		x.final_state != :missing && (x.f[i+1] > x.f[i])
+		!ismissing(x.final_state) && x.f[i+1] > x.f[i]
 	end
 
 	return n_up, n_down, fitness_values
@@ -222,18 +234,27 @@ let
 	p
 end
 
-# ╔═╡ 3ad4ea81-e180-4ba4-a427-405c772cba6d
+# ╔═╡ 04dcab13-941d-4713-9f5a-d87152d9484c
 let
-	fb = FrequencyBin(0.5, 0.05)
+	T, div, st = simulate(s, ρ);
+	
+	bins = range(0, 5*s, length=30)
+	bins_center = (bins[1:end-1] + bins[2:end])/2
+
+	s_pdf = @chain map(x -> pdf(Exponential(s/2), x), bins_center) _/sum(_)
 	p = plot(
-		xlabel = "# down", 
-		ylabel = "# up", 
-		frame=:box
+		bins_center, s_pdf, 
+		label="", line=(:black), yscale=:log10, ylim = (1e-5, 1),
 	)
-	for Δt in [1, 2, 5, 10, 20]
-		nup, ndown, fitness_values = bin_stat(fb, Δt)
-		scatter!([ndown], [nup], label="$Δt")
+	for f in 0.1:0.15:0.9
+		fb = FrequencyBin(f, 0.05)
+		Ts = filter(T, fb)
+		ϕ = map(x -> x.ϕpos[1], Ts)
+
+		h = fit(Histogram, ϕ, bins)
+		plot!(bins_center, h.weights/sum(h.weights), label="$f")
 	end
+
 	p
 end
 
@@ -254,22 +275,25 @@ md"# Tests"
 
 # ╔═╡ Cell order:
 # ╠═10b7789c-e56f-4b71-8e38-312af11bb751
+# ╠═19759f0e-ced3-11ed-2b40-8b01992454e2
 # ╟─6cf21eab-ddb6-4c91-9e6a-d925d61702c2
-# ╠═9e201d74-9e35-46a1-ad42-716630168318
 # ╠═0ed067a4-3780-432b-bd54-9d52a22f2bbf
+# ╟─c7909693-203b-49a8-8713-387dc287e4a2
+# ╟─a37e9a1e-e06f-4402-abf3-f82e22b63fe3
+# ╠═afe7bf04-d998-46fc-afed-8e2cd21361d2
+# ╠═1110d7fa-9c96-4b40-ae60-2396a08d4db0
 # ╠═c75346e5-181b-437d-9210-163cd6fdd995
 # ╠═2cc6dc91-c87a-4eb7-8707-0a7df2be6d1a
-# ╟─b7f8bdbb-7c61-477f-a0eb-813b16701aac
-# ╠═832fe8a7-038d-48ca-94e1-64cf83c360c5
-# ╟─9009ba2e-1661-4ede-b01a-e29a71763e71
-# ╠═86ff1f8d-b2e3-4a26-9e99-234cc4bfc38c
-# ╟─d82545fc-e789-4be5-a4f2-29354bf67244
-# ╠═70025677-825f-46fb-8ba6-bdff6dc78a43
-# ╟─e2daf6a9-d4de-4c65-8285-fd3896b9ed66
-# ╠═3ad4ea81-e180-4ba4-a427-405c772cba6d
-# ╠═e4943794-9de3-4564-967f-c71f29007965
-# ╠═a5410237-9acf-4b51-b1a2-3f76087ef60a
 # ╠═bbb24ac7-d514-4343-8c07-5f017ce45e0b
+# ╠═b7f8bdbb-7c61-477f-a0eb-813b16701aac
+# ╟─9009ba2e-1661-4ede-b01a-e29a71763e71
+# ╠═832fe8a7-038d-48ca-94e1-64cf83c360c5
+# ╠═70025677-825f-46fb-8ba6-bdff6dc78a43
+# ╠═a5410237-9acf-4b51-b1a2-3f76087ef60a
+# ╠═d451785a-8b63-44da-8a84-82d6d24dd507
+# ╠═04dcab13-941d-4713-9f5a-d87152d9484c
+# ╠═1e8c8a5b-a767-46f2-98b9-62c6ce8dbb2d
+# ╠═e4943794-9de3-4564-967f-c71f29007965
 # ╠═a89608e8-511b-4217-b90d-7aa8de5ef69b
 # ╠═8743fc5a-77d0-4975-8b9f-a607aa4387ec
 # ╠═344605b7-7735-49e2-b965-37dac463ab85

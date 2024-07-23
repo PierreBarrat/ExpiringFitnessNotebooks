@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.25
+# v0.19.32
 
 using Markdown
 using InteractiveUtils
@@ -53,7 +53,7 @@ end;
 # ╔═╡ 7bb49e6c-5ec9-4333-bc94-8c8d867ced84
 dat = begin
 	# dat_all[dat_all.α .== maximum(αvals), :]; # filter interesting part
-	dat_all[dat_all.Δt .== 10, :];
+	dat_all[dat_all.Δt .== 1, :];
 end;
 
 # ╔═╡ d92d5654-2550-4c0f-b537-0b702cd2f860
@@ -130,6 +130,13 @@ end
 # ╔═╡ 642da2d5-d196-4fcf-936c-a9585a7df465
 savefig(p1, datdir * "inertia_panel_f$(fb.f).png")
 
+# ╔═╡ 8c7a1d67-1e48-472a-bcd8-832b888f905b
+let
+	p = plt_dict[sort(collect(keys(plt_dict)))[9]]
+	plot!(p, size=(600, 600))
+	savefig("/home/pierrebc/Documents/BaleLabo/Slides/LJP_2023/inertia_beta_illustration.png")
+end
+
 # ╔═╡ 54342047-a26e-4d2f-8f42-9f6bbb8f7816
 function pfix_v_f(trajectories)
 	fbs = [FrequencyBin(f, 0.05) for f in .1:.1:.9]
@@ -177,6 +184,7 @@ end
 # ╠═3cb788b1-ee3c-41c7-9663-72154a925aa3
 # ╠═46587230-b730-4ff7-be1a-ab186e70e951
 # ╠═235b0068-51b6-458a-8cbd-4ffe82c35083
+# ╠═8c7a1d67-1e48-472a-bcd8-832b888f905b
 # ╠═642da2d5-d196-4fcf-936c-a9585a7df465
 # ╠═8e892a2e-c51d-405c-aa3a-3036bcf36a2c
 # ╠═c13f9cca-a534-4ecf-9b7a-0f8d4f825e55
